@@ -77,6 +77,10 @@ DECAYS = H > 0
 
 # ---- caps and current (decayed) usage -------------------------------------------------
 cap = tres(sh(f"sacctmgr -n -P show assoc where account={ACCOUNT} user= format=GrpTRESMins%200").strip().splitlines()[0])
+if "billing" not in cap:
+    raise SystemExit(f"account {ACCOUNT}'s GrpTRESMins has no 'billing' component ({cap or 'nothing set'}). "
+                      "This tool needs a billing cap to report on -- see README's 'What info does this need to work?'")
+HAS_GPU_CAP = "gres/gpu" in cap   # some clusters/accounts cap only billing-hours, not GPU-hours separately
 cap_bill_h, cap_gpu_h = float(cap["billing"]) / 60, float(cap.get("gres/gpu", 0)) / 60
 used = {}
 for line in sh(f"sshare -A {ACCOUNT} -a -P -n -o User,GrpTRESRaw%400").splitlines():
@@ -146,11 +150,9 @@ left_bill, left_gpu = cap_bill_h - tot_bill_h, cap_gpu_h - tot_gpu_h
 e = html.escape
 f0 = lambda x: f"{x:,.0f}"; f1 = lambda x: f"{x:,.1f}"; pc = lambda x: f"{100 * x:.1f}%"
 
-NAMED_MIN = 0.02   # people with at least 2% of the allowance get their own segment and table row; everyone else is grouped
 COLORS_FILE = os.path.join(ROOT, "user_colors.json")
 NSLOT = 24                     # more colour slots than people; nobody shares a colour
 named = list(users)
-rest = []
 try: old_slots = json.load(open(COLORS_FILE))
 except Exception: old_slots = {}
 PINNED = {PINNED_USER: 1} if PINNED_USER else {}     # this person always gets slot 1, the accent colour
@@ -162,12 +164,6 @@ for u, _, _ in named:          # keep a person's colour from day to day, unless 
 for u, _, _ in named:
     if u not in slots: slots[u] = next(i for i in range(1, NSLOT + 1) if i not in slots.values())
 json.dump(slots, open(COLORS_FILE, "w"), indent=1)
-REST_KEY = f"everyone else ({len(rest)})"
-
-def urow(name, b, g, cls):
-    return f'<tr class="pick" tabindex="0" role="button" aria-pressed="false" data-key="{e(name)}"><td><span class="sw {cls}"></span>{e(name)}</td><td class="n">{f0(b)}</td><td class="n">{pc(b / cap_bill_h)}</td><td class="n">{f1(g)}</td><td class="n">{pc(g / cap_gpu_h)}</td></tr>'
-rows_users = "".join(urow(u, b, g, f"c{slots[u]}") for u, b, g in named)
-if rest: rows_users += urow(REST_KEY, sum(b for _, b, _ in rest), sum(g for _, _, g in rest), "other")
 def prow(name, n, b, g, h): return f'<tr><td>{e(name).replace("_", "_<wbr>")}</td><td class="n">{n}</td><td class="n">{f0(b)}</td><td class="n">{f1(g)}</td><td class="n">{f1(h / n) if n else "–"}</td></tr>'
 rows_parts = "".join(prow(p, r[0], r[1], r[2], r[3]) for p, r in parts)                                   # every partition that ran jobs, biggest first
 rows_parts += "".join(prow(p, 0, 0, 0, 0) for p in sorted(set(weights) - {p for p, _ in parts}))            # then every other partition, with zeros
@@ -175,7 +171,7 @@ order = sorted(weights, key=lambda p: weights[p][2] * 1e3 + weights[p][0])
 def cost_of(p):
     wc, wm, wg = weights[p]; gpu = wg > 0; rate = max(REF_CORES * wc, REF_GB * wm, wg if gpu else 0)
     can = left_bill / rate if rate else 0
-    if gpu: can = min(can, left_gpu)
+    if gpu and HAS_GPU_CAP: can = min(can, left_gpu)   # only a real limit if this account has a GPU-hours cap at all
     return rate, can
 def best_worst(names):
     """Among the given partitions, the ones we could keep running longest (best, green) and shortest (worst, red). Nothing is marked if they all tie."""
@@ -197,7 +193,7 @@ for p in order:
     mark = " (best GPU)" if p in BEST else (" (worst GPU)" if p in WORST else "")
     cost_rows += f'<tr><td>{e(p).replace("_", "_<wbr>")}</td><td class="n">{wc:g}</td><td class="n">{wm:g}</td><td class="n">{wg:g}</td><td class="n"{sty}>{f0(rate)}</td><td class="n"{sty}>{f0(can)}{mark}</td></tr>'
 now = dt.datetime.now().strftime("%Y-%m-%d %H:%M")
-frac_b, frac_g = tot_bill_h / cap_bill_h, tot_gpu_h / cap_gpu_h
+frac_b = tot_bill_h / cap_bill_h
 warn = f'<p class="warn">Only {pc(1 - frac_b)} of our billing-hours are left.</p>' if frac_b >= 0.8 else ""
 KATEX_CSS = open(os.path.join(HERE, "..", "math", "katex_inline.css")).read()
 
@@ -289,6 +285,7 @@ table.pt{font-size:.74rem}table.pt th{font-size:.72rem}table.pt td{padding:.1rem
 .hl{display:none;fill:none;stroke:var(--ink);stroke-width:3;pointer-events:none}.hl.on{display:block}
 .rd{color:var(--accent);font-weight:700}code{font-weight:700}
 @media (max-width:40rem){table{font-size:.76rem}td,th{padding-left:.35rem;padding-right:.35rem}.eq .katex{font-size:.88em}}
+.vbars.one{grid-template-columns:minmax(0,344px)!important}
 """.replace("ACCENT_HEX", ACCENT).replace("/*SL*/", SLOT_L).replace("/*CLS*/", CLS + CLSF)
 def _tex_num(x): return f"{x:,.0f}".replace(",", "{,}")
 TEX = {
@@ -357,12 +354,20 @@ def vbar_svg(g):
     out.append(f'<rect class="frame" x="{BX}" y="{BAR_TOP}" width="{BW}" height="{BAR_H}"/>')
     for it in g["items"]: out.append(f'<rect class="hl" data-key="{e(it["key"])}" x="{BX}" y="{it["y"]:.2f}" width="{BW}" height="{it["h"]:.2f}"/>')
     return f'<div class="vw"><svg viewBox="0 0 {VW} {VH}" role="group" aria-label="{e(g["title"])} used by each person, out of the whole allowance">{"".join(out)}</svg></div>'
-G_BILL, G_GPU = vbar_geom("bill"), vbar_geom("gpu")
+G_BILL, G_GPU = vbar_geom("bill"), (vbar_geom("gpu") if HAS_GPU_CAP else None)
+def vbars_html():
+    """One bar (billing-hours) if this account has no separate GPU-hours cap, otherwise both."""
+    bars = [G_BILL] + ([G_GPU] if G_GPU else [])
+    cls = "vbars" if G_GPU else "vbars one"
+    labels = "".join(f'<div class="barlabel" style="{LBL_STYLE}"><span class="bt">{g["title"]}</span><span class="bs">{g["sub"]}</span></div>' for g in bars)
+    return f'<div class="{cls}">{labels}{"".join(vbar_svg(g) for g in bars)}</div>'
 LBL_STYLE = f"margin-left:{BX / VW * 100:.2f}%;width:{BW / VW * 100:.2f}%"   # centres each title over its own bar
 NO_USE = ", ".join(u for u, b, g in users if b <= 0 and g <= 0)
 _tz = f" {TIMEZONE_LABEL}" if TIMEZONE_LABEL else ""
 LEDE_LIVE = f"This page updates from {CLUSTER_NAME}'s records every day at {REFRESH_HOUR}{_tz}."
 LEDE_SNAP = "This copy is a snapshot of the cluster's records from the date shown."
+LIMITS_SENTENCE = ("We have two separate limits for compute (billing-hours and GPU-hours). GPU jobs count toward both."
+                    if HAS_GPU_CAP else "We have one limit for compute: billing-hours.")
 TITLE = f"{LAB_NAME} {CLUSTER_NAME} Usage"
 DECAY_SENTENCE = (f"Older usage counts less over time. With a {round(H / 24)}-day half-life, 100 billing-hours becomes 50 after {round(H / 24)} days, then 25 after another {round(H / 24)} days (unless a reset happens first)."
                   if DECAYS else "Usage does not fade over time on this cluster.")
@@ -374,7 +379,7 @@ def make_body(lede):
 <section>
 <h2>How much compute do we have left?</h2>
 <p class="desc">The whole lab shares one compute allowance.</p>
-<p class="desc">We have two separate limits for compute (billing-hours and GPU-hours). GPU jobs count toward both.</p>
+<p class="desc">{LIMITS_SENTENCE}</p>
 <details><summary>How are job costs calculated?</summary>
 <p>Hourly rates depend on the resources allocated to your job (even if your code doesn't fully use them up) and the partition's billing weights:</p>
 <div class="eq" role="math" aria-label="CPU, RAM and GPU hourly rates; hourly billing rate is the largest of the three; billing-hours and GPU-hours equations">{EQ["calc"]}</div>
@@ -388,7 +393,7 @@ def make_body(lede):
 <p>If there isn't enough allowance left, new jobs may have to wait.</p></details>
 </section>
 <section>
-<div class="vbars"><div class="barlabel" style="{LBL_STYLE}"><span class="bt">{G_BILL["title"]}</span><span class="bs">{G_BILL["sub"]}</span></div><div class="barlabel" style="{LBL_STYLE}"><span class="bt">{G_GPU["title"]}</span><span class="bs">{G_GPU["sub"]}</span></div>{vbar_svg(G_BILL)}{vbar_svg(G_GPU)}</div>
+{vbars_html()}
 </section>
 </div>
 <div>
@@ -425,6 +430,6 @@ OUT_ART = OUT.replace("index.html", "index_artifact.html")
 open(OUT, "w").write(f'<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>{e(TITLE)}</title><style>{STYLE}</style></head><body>{make_body(LEDE_LIVE)}</body></html>')
 open(OUT_ART, "w").write(f"<title>{e(TITLE)}</title><style>{STYLE}</style>{make_body(LEDE_SNAP)}")
 # a page with just the two bars, screenshotted into bars.png for the optional Slack post (post_slack.py)
-_vb = f'<div class="vbars"><div class="barlabel" style="{LBL_STYLE}"><span class="bt">{G_BILL["title"]}</span><span class="bs">{G_BILL["sub"]}</span></div><div class="barlabel" style="{LBL_STYLE}"><span class="bt">{G_GPU["title"]}</span><span class="bs">{G_GPU["sub"]}</span></div>{vbar_svg(G_BILL)}{vbar_svg(G_GPU)}</div>'
+_vb = f'{vbars_html()}'
 open(os.path.join(ROOT, "bars_only.html"), "w").write(f'<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="robots" content="noindex,nofollow"><title>{e(TITLE)}</title><style>{STYLE}body{{margin:0;padding:.8rem 1rem;max-width:none}}</style></head><body><h1 style="margin:0 0 .5rem 2.2rem;font-size:1.2rem">{e(TITLE)}, {now}</h1>{_vb}</body></html>')
 print("wrote", OUT, "and", OUT_ART, f"({os.path.getsize(OUT) // 1024} KB)"); print(f"used {f0(tot_bill_h)}/{f0(cap_bill_h)} billing-h, {f1(tot_gpu_h)}/{f0(cap_gpu_h)} GPU-h; users {len(users)}, partitions {len(parts)}")

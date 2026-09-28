@@ -32,10 +32,25 @@ usage) you can run yourself with no Slurm access at all: see [Try it without Slu
 
 This assumes a standard Slurm setup:
 
-- An account with `GrpTRESMins` caps for billing and, optionally, GPU minutes (this is if
-  `sacctmgr show assoc where account=<acct> format=GrpTRESMins` returns something)
+- An account with a `billing` component in `GrpTRESMins` (`sacctmgr show assoc where
+  account=<acct> format=GrpTRESMins` returns something with `billing=...` in it). This is
+  required: it's the one number this whole tool is built around.
 - `TRESBillingWeights` configured on your partitions (`scontrol show partition` shows
   `TRESBillingWeights=...`)
+
+A GPU-hours cap is detected automatically, not assumed: the builder checks whether `GrpTRESMins`
+also has a `gres/gpu` component and shows a second bar only if it does. On an account with just a
+billing cap (no separate GPU-hours limit), the page adapts to a single bar and adjusts its
+wording, rather than crashing or showing a broken all-zero GPU bar. This is genuinely detected
+per-account at build time, so you don't need to know in advance which kind of account you have,
+the same `setup.sh`/`config.env` works either way.
+
+Note this only covers clusters whose usage accounting runs through Slurm's own TRES/billing
+system. A cluster that tracks its allowance a completely different way, for example a separate
+"service units" ledger maintained outside Slurm's own accounting, isn't something this tool can
+discover on its own; it would need someone to say what command/output that system actually uses,
+so an adapter could be written for it specifically. If you're not sure which kind your cluster is,
+run the `sacctmgr` command above yourself and see what comes back.
 - Read access to `sacctmgr`, `sshare`, `sacct` and `scontrol` for that account. This is just the same info `sshare -A <acct>` already shows you.
 - Python 3, and a login or submit node to run the daily job from.
 
