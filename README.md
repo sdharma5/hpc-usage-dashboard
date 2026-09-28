@@ -106,8 +106,9 @@ nothing else to clean up)
 - Colors: set `ACCENT` in `config.env`; the rest of the per-person palette is generated from it
   automatically. Each person keeps the same color from day to day (`user_colors.json`, regenerated
   each run, not meant to be hand-edited).
-- Reference job size, refresh time, account, and the partitions shown: all in `config.env`;
-  re-run `./setup.sh` or edit the file and rebuild.
+- Reference job size, refresh time, account, and which partition the daily job runs on: all in
+  `config.env`; re-run `./setup.sh` or edit the file and rebuild. Which partitions *appear* on the
+  page isn't something you set: that's automatic, from whichever ones have `TRESBillingWeights`.
 - Wording: `bin/build_usage_page.py` is one plain Python file generating HTML strings, with no
   templating engine, so any sentence on the page is a string you can search for and change.
 
