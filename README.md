@@ -32,27 +32,34 @@ usage) you can run yourself with no Slurm access at all: see [Try it without Slu
 
 This assumes a standard Slurm setup:
 
-- An account with a `billing` component in `GrpTRESMins` (`sacctmgr show assoc where
-  account=<acct> format=GrpTRESMins` returns something with `billing=...` in it). This is
-  required: it's the one number this whole tool is built around.
-- `TRESBillingWeights` configured on your partitions (`scontrol show partition` shows
-  `TRESBillingWeights=...`)
-
-A GPU-hours cap is detected automatically, not assumed: the builder checks whether `GrpTRESMins`
-also has a `gres/gpu` component and shows a second bar only if it does. On an account with just a
-billing cap (no separate GPU-hours limit), the page adapts to a single bar and adjusts its
-wording, rather than crashing or showing a broken all-zero GPU bar. This is genuinely detected
-per-account at build time, so you don't need to know in advance which kind of account you have,
-the same `setup.sh`/`config.env` works either way.
-
-Note this only covers clusters whose usage accounting runs through Slurm's own TRES/billing
-system. A cluster that tracks its allowance a completely different way, for example a separate
-"service units" ledger maintained outside Slurm's own accounting, isn't something this tool can
-discover on its own; it would need someone to say what command/output that system actually uses,
-so an adapter could be written for it specifically. If you're not sure which kind your cluster is,
-run the `sacctmgr` command above yourself and see what comes back.
+- An account with at least one cap set in `GrpTRESMins` (`sacctmgr show assoc where
+  account=<acct> format=GrpTRESMins` returns something).
 - Read access to `sacctmgr`, `sshare`, `sacct` and `scontrol` for that account. This is just the same info `sshare -A <acct>` already shows you.
 - Python 3, and a login or submit node to run the daily job from.
+
+**Whatever is actually capped is what gets shown, nothing is hardcoded to billing-hours and
+GPU-hours.** At build time the page reads the account's own `GrpTRESMins` and draws one bar per
+capped resource, correctly labeled: `billing`, `gres/gpu` (or a specific GPU type like
+`gres/gpu:a100`), `cpu`, `mem`, `node`, a `license/*`, or anything else Slurm reports gets a
+sensible name derived from its own key rather than being mistaken for something else. One cap, two
+caps, five caps, it doesn't matter, and you don't need to know in advance which kind of account
+you have; the same `setup.sh`/`config.env` works everywhere.
+
+The "what a job costs now" table and its equations are the one part that's inherently specific:
+they only make sense when the account has a `billing` cap *and* the cluster has
+`TRESBillingWeights` configured on its partitions (`scontrol show partition` shows
+`TRESBillingWeights=...`), since that's what a per-partition weighted rate actually is. When that
+setup isn't there, the page doesn't invent a formula for something it doesn't apply to — it drops
+that table and instead shows, in a plain code block, exactly which Slurm fields each cap number
+comes from.
+
+This only covers clusters whose usage accounting runs through Slurm's own TRES/billing system,
+however many or few resource types that account happens to cap. A cluster that tracks its
+allowance a completely different way, for example a separate "service units" ledger maintained
+outside Slurm's own accounting, isn't something this tool can discover on its own; it would need
+someone to say what command/output that system actually uses, so an adapter could be written for
+it specifically. If you're not sure which kind your cluster is, run the `sacctmgr` command above
+yourself and see what comes back.
 
 Optional, not required:
 - Node.js (any recent version), for typeset equations (KaTeX) instead of plain LaTeX text.
@@ -127,17 +134,21 @@ nothing else to clean up)
 
 ## How is usage computed?
 
-- Caps: `sacctmgr show assoc ... format=GrpTRESMins`, converted from minutes to hours.
+- Caps: `sacctmgr show assoc ... format=GrpTRESMins`, converted from minutes to hours, one bar
+  per capped resource found (see above).
 - Current usage: `sshare -A <acct> -a`, Slurm's own decayed usage total per person, the same
-  number Slurm uses to throttle new jobs.
+  numbers Slurm uses to throttle new jobs.
 - Reset detection: your cluster may reset usage on a schedule (`PriorityUsageResetPeriod`). Slurm
   doesn't expose the last reset date directly, so the page infers it: it tests every possible
-  start date over the last 100 days against the account's job records, fading old jobs by the
-  cluster's own decay half-life, and keeps whichever date best reproduces Slurm's current total.
-  This "reset date" is inferred, i.e. it's preferable to use an _actual_ reset date given by your
-  cluster admins.
-- Job cost table: `scontrol show partition` for `TRESBillingWeights`, applied to the reference
-  job size from setup, using Slurm's own max() billing rule.
+  start date over the last 100 days against the account's job records for its main capped resource
+  (billing, if the account has a billing cap, otherwise whichever cap comes first), fading old jobs
+  by the cluster's own decay half-life, and keeps whichever date best reproduces Slurm's current
+  total. This "reset date" is inferred, i.e. it's preferable to use an _actual_ reset date given by
+  your cluster admins.
+- Job cost table: only shown when the account has a billing cap and the cluster has
+  `TRESBillingWeights` configured (`scontrol show partition`); applied to the reference job size
+  from setup, using Slurm's own max() billing rule. Otherwise the page shows the plain Slurm fields
+  behind each cap instead, since no weighted-cost formula applies.
 
 ## Customizing
 
