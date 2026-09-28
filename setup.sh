@@ -40,7 +40,16 @@ DEFAULT_SLUG="$(echo "${APP_SLUG:-$CLUSTER_NAME-usage}" | tr '[:upper:] ' '[:low
 APP_SLUG="$(ask "Pick a short name with no spaces for this setup, e.g. \"skipjack-usage\" (used to name the daily job and a settings folder)" "$DEFAULT_SLUG")"
 
 bold "-- Slurm --"
-ACCOUNT="$(ask "Which Slurm account (allocation) should this track? Usually your lab's or PI's account (ex. JHED)." "${ACCOUNT:-$(id -gn)}")"
+DEFAULT_ACCOUNT="${ACCOUNT:-}"
+if [ -z "$DEFAULT_ACCOUNT" ] && command -v sacctmgr >/dev/null 2>&1; then
+  MY_ACCOUNTS="$(sacctmgr -n show assoc where user="$(id -un)" format=Account%30 2>/dev/null | tr -d ' ' | sort -u)"
+  if [ -n "$MY_ACCOUNTS" ]; then
+    echo "Slurm accounts you belong to: $(echo "$MY_ACCOUNTS" | tr '\n' ' ')"
+    DEFAULT_ACCOUNT="$(echo "$MY_ACCOUNTS" | head -1)"
+  fi
+fi
+DEFAULT_ACCOUNT="${DEFAULT_ACCOUNT:-$(id -gn)}"   # last resort guess, if sacctmgr isn't available or found nothing
+ACCOUNT="$(ask "Which Slurm account (allocation) should this track? Usually your lab's or PI's account (ex. JHED)." "$DEFAULT_ACCOUNT")"
 if command -v sacctmgr >/dev/null 2>&1; then
   if ! sacctmgr -n show account "$ACCOUNT" >/dev/null 2>&1; then
     echo "warning: 'sacctmgr show account $ACCOUNT' found nothing, double check the name."
