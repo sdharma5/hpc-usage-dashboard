@@ -34,13 +34,13 @@ PYTHON3="$(command -v python3 || true)"
 [ -n "$PYTHON3" ] || { echo "python3 is required and was not found on PATH."; exit 1; }
 
 bold "-- Identity --"
-LAB_NAME="$(ask "Lab / group display name" "${LAB_NAME:-My Lab}")"
-CLUSTER_NAME="$(ask "Cluster display name" "${CLUSTER_NAME:-MyCluster}")"
+LAB_NAME="$(ask "What's your lab or group called?" "${LAB_NAME:-My Lab}")"
+CLUSTER_NAME="$(ask "What's your cluster called?" "${CLUSTER_NAME:-MyCluster}")"
 DEFAULT_SLUG="$(echo "${APP_SLUG:-$CLUSTER_NAME-usage}" | tr '[:upper:] ' '[:lower:]-' | tr -cd 'a-z0-9-')"
-APP_SLUG="$(ask "Short id (Slurm job name, ~/.config folder, no spaces)" "$DEFAULT_SLUG")"
+APP_SLUG="$(ask "Pick a short name with no spaces for this setup, e.g. \"skipjack-usage\" (used to name the daily job and a settings folder)" "$DEFAULT_SLUG")"
 
 bold "-- Slurm --"
-ACCOUNT="$(ask "Slurm account (allocation) to report on" "${ACCOUNT:-$(id -gn)}")"
+ACCOUNT="$(ask "Which Slurm account (allocation) should this track? Usually your lab's or PI's account (ex. JHED)." "${ACCOUNT:-$(id -gn)}")"
 if command -v sacctmgr >/dev/null 2>&1; then
   if ! sacctmgr -n show account "$ACCOUNT" >/dev/null 2>&1; then
     echo "warning: 'sacctmgr show account $ACCOUNT' found nothing — double check the name."
@@ -52,24 +52,24 @@ if command -v sinfo >/dev/null 2>&1; then
   [ -n "$DEFAULT_PARTITION" ] || DEFAULT_PARTITION="$(sinfo -h -o '%P' | grep '\*$' | head -1 | tr -d '*')"   # the one sinfo marks default, if any
 fi
 while :; do
-  PARTITION="$(ask "Partition for the daily refresh job itself (needs only 1 CPU, 1GB, ~1 min)" "$DEFAULT_PARTITION")"
+  PARTITION="$(ask "Which partition should the daily refresh job itself run on? (It only needs 1 CPU core, 1 GB of RAM, and about a minute.)" "$DEFAULT_PARTITION")"
   [ -n "$PARTITION" ] && break
   echo "A partition name is required -- the daily job can't be submitted without one."
 done
-REFRESH_HOUR="$(ask "Local time to refresh each day (24h HH:MM)" "${REFRESH_HOUR:-06:00}")"
+REFRESH_HOUR="$(ask "What time should the page refresh each day? (24-hour HH:MM)" "${REFRESH_HOUR:-06:00}")"
 if ! [[ "$REFRESH_HOUR" =~ ^([01][0-9]|2[0-3]):[0-5][0-9]$ ]]; then echo "That doesn't look like HH:MM — using 06:00."; REFRESH_HOUR=06:00; fi
-TIMEZONE_LABEL="$(ask "Timezone label to show next to that time (cosmetic)" "${TIMEZONE_LABEL:-$(date +%Z)}")"
-REF_CORES="$(ask "Reference job: CPU cores (for the 'what a job costs now' table)" "${REF_CORES:-8}")"
-REF_GB="$(ask "Reference job: RAM in GB" "${REF_GB:-64}")"
+TIMEZONE_LABEL="$(ask "Timezone (ET, CT, MT, PT, GMT, UTC, or your own)" "${TIMEZONE_LABEL:-$(date +%Z)}")"
+REF_CORES="$(ask "The page shows an example job's cost to illustrate pricing. How many CPU cores should that example job use?" "${REF_CORES:-8}")"
+REF_GB="$(ask "And how much RAM (in GB) should that example job use?" "${REF_GB:-64}")"
 
 bold "-- Look --"
-ACCENT="$(ask "Accent color, hex" "${ACCENT:-#2563eb}")"
+ACCENT="$(ask "Pick an accent color for the page (hex code, e.g. #2563eb)." "${ACCENT:-#2563eb}")"
 if ! [[ "$ACCENT" =~ ^#[0-9a-fA-F]{6}$ ]]; then echo "That doesn't look like #rrggbb — using #2563eb."; ACCENT=#2563eb; fi
-PINNED_USER="$(ask "Username who should always get the accent color (optional)" "${PINNED_USER:-}")"
+PINNED_USER="${PINNED_USER:-}"
 
 bold "-- Hosting (optional): Cloudflare Pages --"
 echo "Publishes the page at an unlisted https://<name>.pages.dev link, free, updated by the daily job."
-CF_ENABLE="$(yesno "Set this up now?" "$([ -n "$CF_PROJECT" ] && echo y || echo n)")"
+CF_ENABLE="$(yesno "Want to publish this page online for free with Cloudflare Pages?" "$([ -n "$CF_PROJECT" ] && echo y || echo n)")"
 if [ "$CF_ENABLE" = true ]; then
   SUFFIX="$(head -c8 /dev/urandom | od -An -tx1 | tr -d ' \n')"
   CF_PROJECT="$(ask "Cloudflare Pages project name (site = https://<this>.pages.dev)" "${CF_PROJECT:-$APP_SLUG-$SUFFIX}")"
@@ -95,7 +95,7 @@ else
 fi
 
 bold "-- Optional: post a picture of the usage bars to Slack every morning --"
-SLACK_ENABLE="$(yesno "Set this up now?" "$([ "${SLACK_ENABLED:-false}" = true ] && echo y || echo n)")"
+SLACK_ENABLE="$(yesno "Want it to also post a picture of the usage bars to Slack every morning?" "$([ "${SLACK_ENABLED:-false}" = true ] && echo y || echo n)")"
 if [ "$SLACK_ENABLE" = true ]; then
   echo
   echo "You'll need a Slack app with a bot token. See docs/SLACK_SETUP.md for the full walkthrough:"
