@@ -49,9 +49,7 @@ The cost table only applies with a `billing` cap and `TRESBillingWeights` config
 guessing at a formula.
 
 This only works for clusters whose accounting runs through Slurm's own TRES/billing system, not a
-separate ledger (e.g. "service units") tracked outside Slurm. Check with `sacctmgr` if unsure. A
-non-Slurm ledger isn't something this tool can discover on its own; someone would need to say what
-command or output it uses, so an adapter could be written.
+separate ledger (e.g. "service units") tracked outside Slurm. Check with `sacctmgr` if unsure. An adaptor may be written for a separate ledger.
 
 Optional:
 - Node.js, for typeset equations (KaTeX) instead of plain LaTeX text.
@@ -107,14 +105,12 @@ put together.
 Most shared clusters don't allow a user's own cron or scrontab, so `refresh_daily.sbatch`
 resubmits itself, chained day after day. Each run:
 
-1. Queues tomorrow's run for the time you set in setup (first, so a failed run can't stall future ones).
+1. Queues tomorrow's run for the time you set in setup (done first so a failed run can't stall future ones).
 2. Rebuilds the page: polls Slurm (`sacctmgr`, `sshare`, `sacct`, `scontrol`) for caps, usage,
    recent jobs, and partition weights, and regenerates `index.html` from scratch.
 3. Uploads the new page to Cloudflare, if configured.
 4. Posts the usage bars to Slack, if configured.
 
-Nothing is scheduled outside Slurm: no cron, no external timer, no server running between
-refreshes. The page just sits there as a static file until the next job wakes up and rewrites it.
 
 Check it's running: `squeue -u $USER -n <APP_SLUG>-daily`
 
@@ -131,8 +127,8 @@ clean up)
   doesn't expose the last reset date, so the page infers it: it tests every possible start date
   over the last 100 days against job records for the account's main capped resource (billing, if
   present, otherwise whichever cap comes first), fading old jobs by the cluster's decay half-life,
-  and keeps whichever date best reproduces Slurm's current total. This is inferred, not confirmed;
-  prefer an actual reset date from your cluster admins if you have one.
+  and keeps whichever date best reproduces Slurm's current total. _This is inferred, not confirmed;
+  use an actual reset date from your cluster admins if you have one._
 - Job cost table: only shown with a billing cap and `TRESBillingWeights` configured
   (`scontrol show partition`), applied to the reference job size from setup with Slurm's own max()
   rule. Otherwise the page shows the plain Slurm fields behind each cap instead.
