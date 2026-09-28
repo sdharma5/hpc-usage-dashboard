@@ -17,7 +17,7 @@ tool works for an account capped on anything else.
 From `demo/`, a fully fabricated example (fictional lab, cluster, and usage) you can run yourself
 with no Slurm access: see [Try it without Slurm](#try-it-without-slurm).
 
-## What's in the dashboard
+## What's in the dashboard?
 
 - How much of each capped resource is left, one bar per resource (billing-hours and GPU-hours in
   the example), broken down by person. Colors are generated from one accent color you pick.
@@ -30,7 +30,7 @@ with no Slurm access: see [Try it without Slurm](#try-it-without-slurm).
 
 ![The full dashboard: bars, recent-activity table, and job cost table, from the demo](docs/screenshots/demo-details.png)
 
-## What info does this need to work
+## What info does this need to work?
 
 - An account with at least one cap set in `GrpTRESMins` (`sacctmgr show assoc where
   account=<acct> format=GrpTRESMins` returns something).
@@ -38,19 +38,16 @@ with no Slurm access: see [Try it without Slurm](#try-it-without-slurm).
   `sshare -A <acct>` already shows you.
 - Python 3, and a login or submit node to run the daily job from.
 
-**Whatever is actually capped is what gets shown.** At build time the page reads the account's
+At build time, the page reads the account's
 `GrpTRESMins` and draws one bar per capped resource: `billing`, `gres/gpu` (or a specific GPU type
-like `gres/gpu:a100`), `cpu`, `mem`, `node`, a `license/*`, or anything else gets a sensible label
-from its own key. One cap or five, it doesn't matter, and the same `setup.sh`/`config.env` works
-either way.
+like `gres/gpu:a100`), `cpu`, `mem`, `node`, a `license/*`, etc.
 
-The cost table only applies with a `billing` cap and `TRESBillingWeights` configured
-(`scontrol show partition`). Without that, the page shows the raw Slurm fields instead of
-guessing at a formula.
+The cost table only appears with a `billing` cap and `TRESBillingWeights` configured
+(`scontrol show partition`). 
 
-This only works for clusters whose accounting runs through Slurm's own TRES/billing system, not a
+_This dashboard only works for clusters whose accounting runs through Slurm's own TRES/billing system, not a
 separate ledger (e.g. "service units") tracked outside Slurm. Check with `sacctmgr` if unsure. An adaptor may be written for a separate ledger.
-
+_
 Optional:
 - Node.js, for typeset equations (KaTeX) instead of plain LaTeX text.
 - Firefox or Chrome/Chromium, headless, only needed for the Slack post (screenshots the bars).
