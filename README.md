@@ -10,10 +10,10 @@ uses Slurm to schedule jobs and track usage.
 
 ## What's in the dashboard?
 
-- Allowance left, as two bars (billing-hours and GPU-hours), broken down by each lab members' specific usage. Colors are
+- Allowance left. This is illustrated with two usage bars (billing-hours and GPU-hours) broken down by each lab members' specific usage. Colors are
   generated from one accent color you pick.
 - What ran since the last reset (or the past 30 days, if the cluster doesn't reset usage), by
-  partition: jobs, billing-hours, GPU-hours, average job length.
+  partition: (how many jobs, billing-hours, GPU-hours, and average job length per partition)
 - What a job costs right now: for a reference job size you choose, the billing rate and how long
   you could keep running it on each partition, with the cheapest and priciest GPU partitions
   colored green to red.
