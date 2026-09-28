@@ -21,7 +21,6 @@ cluster that uses Slurm to schedule jobs and track usage.
 - Plain explanations of how billing-hours and GPU-hours are calculated, and whether usage resets,
   with the equations typeset if Node.js is available, plain text otherwise.
 
-Click a person's name or color and it highlights them in both bars and the table.
 
 ## What it needs from your cluster
 
@@ -32,12 +31,9 @@ This assumes a pretty standard setup:
 - `TRESBillingWeights` configured on at least the partitions you care about
   (`scontrol show partition` shows `TRESBillingWeights=...`), so a job's hourly rate is
   `max(cores x weight, GB x weight, gpus x weight)`.
-- Read access to `sacctmgr`, `sshare`, `sacct` and `scontrol` for that account. Nothing special,
-  it's the same info `sshare -A <acct>` already shows you.
+- Read access to `sacctmgr`, `sshare`, `sacct` and `scontrol` for that account. This requires no
+  elevated privileges: it's the same information `sshare -A <acct>` already shows you.
 - Python 3 and a login/submit node to run the daily job from.
-
-If your cluster doesn't use `TRESBillingWeights` or `GrpTRESMins`, this isn't going to fit as is.
-The numbers come straight from those.
 
 Optional, not required:
 - Node.js, any recent version, for typeset equations (KaTeX) instead of plain LaTeX text.
@@ -79,8 +75,7 @@ sbatch refresh_daily.sbatch         # runs now, then re-schedules itself daily
 Most shared clusters don't let you run your own cron or scrontab, so `refresh_daily.sbatch`
 resubmits itself. Each run queues tomorrow's run first (only if one isn't already waiting), then
 rebuilds the page, uploads it to Cloudflare if that's set up, and posts to Slack if that's set up.
-Queuing the next run before doing anything else means a failed rebuild can't break the daily
-chain.
+This ordering ensures a failed rebuild cannot interrupt the daily chain.
 
 Check it's running: `squeue -u $USER -n <APP_SLUG>-daily`
 
@@ -90,16 +85,15 @@ clean up)
 ## How the numbers are computed
 
 - Caps: `sacctmgr show assoc ... format=GrpTRESMins`, converted from minutes to hours.
-- Current usage: `sshare -A <acct> -a`, Slurm's own decayed usage total per person. This is the
-  same number Slurm uses to throttle new jobs, so it's not a guess.
+- Current usage: `sshare -A <acct> -a`, Slurm's own decayed usage total per person, the same
+  number Slurm uses to throttle new jobs.
 - Reset detection: your cluster might reset usage on a schedule (`PriorityUsageResetPeriod`).
-  There's no direct way to ask Slurm when the last reset happened, so the page works it out: it
-  rebuilds the account's total from job records for every possible start date over the last 100
-  days (fading old jobs by the cluster's own decay half-life, read live from
-  `scontrol show config`), and picks whichever date reproduces Slurm's current total closest. It
-  only reports a reset if one date fits a lot better than assuming no reset at all, otherwise it
-  says nothing instead of guessing. This is inferred, not confirmed. The page says so, and you
-  should still check the real reset schedule with your cluster admins if it matters.
+  Slurm doesn't expose the last reset date directly, so the page infers it: it tests every
+  possible start date over the last 100 days against the account's job records, fading old jobs
+  by the cluster's own decay half-life, and keeps whichever date best reproduces Slurm's current
+  total. It only reports a reset when the fit is clearly better than assuming none happened;
+  otherwise it says nothing. The page flags this as inferred, not confirmed, so check the real
+  schedule with your cluster admins if it matters.
 - Job cost table: `scontrol show partition` for `TRESBillingWeights`, applied to the reference
   job size from setup, using Slurm's own max() billing rule.
 
