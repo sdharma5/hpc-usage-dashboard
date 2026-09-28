@@ -24,8 +24,8 @@ uses Slurm to schedule jobs and track usage.
 
 This assumes a standard Slurm setup:
 
-- An account with `GrpTRESMins` caps for billing and, optionally, GPU minutes, i.e.
-  `sacctmgr show assoc where account=<acct> format=GrpTRESMins` returns something.
+- An account with `GrpTRESMins` caps for billing and, optionally, GPU minutes (this is if
+  `sacctmgr show assoc where account=<acct> format=GrpTRESMins` returns something)
 - `TRESBillingWeights` configured on your partitions (`scontrol show partition` shows
   `TRESBillingWeights=...`)
 - Read access to `sacctmgr`, `sshare`, `sacct` and `scontrol` for that account. This is just the same info `sshare -A <acct>` already shows you.
