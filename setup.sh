@@ -74,6 +74,11 @@ if ! [[ "$REFRESH_HOUR" =~ ^([01][0-9]|2[0-3]):[0-5][0-9]$ ]]; then echo "That d
 TIMEZONE_LABEL="$(ask "Timezone (ET, CT, MT, PT, GMT, UTC, or your own)" "${TIMEZONE_LABEL:-$(date +%Z)}")"
 REF_CORES="$(ask "The page shows an example job's cost to illustrate pricing. How many CPU cores should that example job use?" "${REF_CORES:-8}")"
 REF_GB="$(ask "And how much RAM (in GB) should that example job use?" "${REF_GB:-64}")"
+RESET_DAY_OF_MONTH="$(ask "If your cluster admins have told you the exact day of the month usage resets, enter it (1-31); otherwise leave this blank and the page will infer it instead" "${RESET_DAY_OF_MONTH:-}")"
+if [ -n "$RESET_DAY_OF_MONTH" ] && ! [[ "$RESET_DAY_OF_MONTH" =~ ^([1-9]|[12][0-9]|3[01])$ ]]; then
+  echo "That doesn't look like a day of the month (1-31), ignoring it: the page will infer the reset instead."
+  RESET_DAY_OF_MONTH=""
+fi
 
 bold "-- Look --"
 ACCENT="$(ask "Pick an accent color for the page (hex code, e.g. #2563eb)." "${ACCENT:-#2563eb}")"
@@ -150,6 +155,7 @@ REFRESH_HOUR="$REFRESH_HOUR"
 TIMEZONE_LABEL="$TIMEZONE_LABEL"
 REF_CORES="$REF_CORES"
 REF_GB="$REF_GB"
+RESET_DAY_OF_MONTH="$RESET_DAY_OF_MONTH"
 ACCENT="$ACCENT"
 PINNED_USER="$PINNED_USER"
 CF_PROJECT="$CF_PROJECT"

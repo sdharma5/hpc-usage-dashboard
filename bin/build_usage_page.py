@@ -44,6 +44,8 @@ LAB_NAME, CLUSTER_NAME, APP_SLUG = cfg("LAB_NAME", "My Lab"), cfg("CLUSTER_NAME"
 ACCOUNT = cfg("ACCOUNT")
 REFRESH_HOUR, TIMEZONE_LABEL = cfg("REFRESH_HOUR", "06:00"), cfg("TIMEZONE_LABEL", "")
 REF_CORES, REF_GB = int(cfg("REF_CORES", "8")), int(cfg("REF_GB", "64"))
+_reset_day_s = cfg("RESET_DAY_OF_MONTH", "").strip()
+RESET_DAY_OF_MONTH = int(_reset_day_s) if _reset_day_s.isdigit() and 1 <= int(_reset_day_s) <= 31 else None
 ACCENT = cfg("ACCENT", "#2563eb")
 PINNED_USER = cfg("PINNED_USER", "").strip()
 if not ACCOUNT: raise SystemExit("config.env: ACCOUNT is not set")
@@ -199,10 +201,29 @@ def detect_reset(window_days=100, step_h=3):
     best, none_reset = float(errs.min()), float(errs[0]); plateau = ages[errs <= best + 0.01]; T = now_ - dt.timedelta(hours=float(np.median(plateau)))
     print(f"reset detection (on {tres_info(PRIMARY)[0]}): best fit counting from {T:%Y-%m-%d %H:%M} (error {100 * best:.1f}%); counting everything would be off by {100 * none_reset:.0f}%")
     return T if (best <= 0.05 and none_reset - best >= 0.08 and T > w0 + dt.timedelta(days=2)) else None
-step("Checking whether usage resets (this can take a while on a busy account)...")
-try: _reset = detect_reset()
-except Exception as ex: print("reset detection failed:", ex); _reset = None
-RESET_SENTENCE = (f'A reset appears to have happened around <b class="rd">{_reset.strftime("%b %d").replace(" 0", " ")}</b> (usage from before then no longer counts), but this hasn\'t been confirmed by cluster staff.' if _reset else "")
+def confirmed_reset_date(day_of_month):
+    """The most recent occurrence of this day-of-month, on or before today. Recomputed fresh every
+    run, so (unlike a fixed one-time date) it never goes stale after the next month's reset."""
+    now_ = dt.datetime.now(); y, m = now_.year, now_.month
+    import calendar
+    for _ in range(2):   # this month if it's already happened, otherwise last month
+        last_day = calendar.monthrange(y, m)[1]
+        d = dt.datetime(y, m, min(day_of_month, last_day))
+        if d <= now_: return d
+        m -= 1
+        if m == 0: m, y = 12, y - 1
+    return d
+if RESET_DAY_OF_MONTH:
+    _reset = confirmed_reset_date(RESET_DAY_OF_MONTH); _reset_confirmed = True
+    print(f"reset: using the confirmed day of month ({RESET_DAY_OF_MONTH}) -> {_reset:%Y-%m-%d}")
+else:
+    step("Checking whether usage resets (this can take a while on a busy account)...")
+    try: _reset = detect_reset()
+    except Exception as ex: print("reset detection failed:", ex); _reset = None
+    _reset_confirmed = False
+RESET_SENTENCE = ("" if not _reset else
+    f'Usage resets on day {RESET_DAY_OF_MONTH} of each month; the most recent reset was around <b class="rd">{_reset.strftime("%b %d").replace(" 0", " ")}</b> (usage from before then no longer counts).' if _reset_confirmed else
+    f'A reset appears to have happened around <b class="rd">{_reset.strftime("%b %d").replace(" 0", " ")}</b> (usage from before then no longer counts), but this hasn\'t been confirmed by cluster staff.')
 # ---- what ran since the reset (or the past 30 days if no reset was detected) ---------------
 _since = _reset if _reset else dt.datetime.now() - dt.timedelta(days=30)
 RAN_TITLE = f'What we ran since the reset ({_reset.strftime("%b %d").replace(" 0", " ")})' if _reset else "What we ran in the past 30 days"
