@@ -5,7 +5,7 @@ left, who's used what, what ran recently, and what a job costs on each partition
 wherever you like (ex. a free Cloudflare Pages link). It can optionally post a picture
 of the usage bars to your lab's Slack every day at some user-set time.
 
-Your cluster has its own name (`CLUSTER_NAME` in config.env). This tool works on any cluster that
+This tool works on any cluster that
 uses Slurm to schedule jobs and track usage.
 
 ## What's in the dashboard?
