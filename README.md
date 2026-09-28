@@ -5,9 +5,9 @@ each capped resource, recent job statistics, and (when relevant) what a job cost
 from Slurm's own accounting. Host it wherever you like (e.g. a free Cloudflare Pages link), and
 optionally post the usage bars to Slack every morning.
 
-The dashboard works on any cluster using Slurm to schedule jobs and track usage. It finds whatever
+The dashboard works on any cluster using Slurm to schedule jobs and track usage. It finds whatever resources
 your account is actually capped on and builds one usage bar per capped resource. Billing-hours and
-GPU-hours (Skipjack's setup) are the running example in this README, but the same tool works for
+GPU-hours (Skipjack's setup) are the running example capped resources in this README, but the same tool works for
 an account capped on anything else.
 
 <img src="docs/screenshots/demo-bars.png" alt="Two usage bars, billing-hours and GPU-hours, broken down by person" width="70%">
