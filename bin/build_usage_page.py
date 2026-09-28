@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """HPC usage page for one Slurm account. No scraping: everything comes from the scheduler itself.
-  sacctmgr  -> the caps (GrpTRESMins: whichever TRES types this account has a limit on -- not
+  sacctmgr  -> the caps (GrpTRESMins: whichever TRES types this account has a limit on, not
                assumed to be billing+GPU; could be just billing, just GPU, cpu-hours, memory,
                nodes, a license, or several of these at once. Discovered fresh each run.)
   sshare    -> what currently counts against those caps (decayed usage, per user)
@@ -16,7 +16,7 @@ The weighted "billing" cost model (a job's hourly rate is the LARGEST of cores*w
 gpus*w_gpu) is how Slurm's own TRESBillingWeights are normally configured, and is only used for
 the "what a job costs now" table when this account actually has a billing cap. Any other capped
 resource (cpu-hours, memory, nodes, a license, ...) is charged 1:1, with no weighting, since raw
-TRES caps aren't weighted the way billing is -- the page shows the plain Slurm accounting fields
+TRES caps aren't weighted the way billing is; the page shows the plain Slurm accounting fields
 behind it instead of a cost formula that wouldn't apply."""
 import subprocess, os, re, html, json, math, colorsys, datetime as dt
 
@@ -38,7 +38,7 @@ CFG = load_config()
 def cfg(key, default=""): return os.environ.get(key, CFG.get(key, default))
 
 if not os.path.exists(os.path.join(ROOT, "config.env")):
-    raise SystemExit(f"no config.env in {ROOT} — run ./setup.sh once first (see config.example.env)")
+    raise SystemExit(f"no config.env in {ROOT}: run ./setup.sh once first (see config.example.env)")
 
 LAB_NAME, CLUSTER_NAME, APP_SLUG = cfg("LAB_NAME", "My Lab"), cfg("CLUSTER_NAME", "MyCluster"), cfg("APP_SLUG", "hpc-usage")
 ACCOUNT = cfg("ACCOUNT")
@@ -103,11 +103,11 @@ def tres_scale(key): return 1024.0 if key == "mem" else 1.0   # Slurm reports me
 
 cap = tres(sh(f"sacctmgr -n -P show assoc where account={ACCOUNT} user= format=GrpTRESMins%200").strip().splitlines()[0])
 if not cap:
-    raise SystemExit(f"account {ACCOUNT} has no GrpTRESMins caps set at all -- this tool needs at "
+    raise SystemExit(f"account {ACCOUNT} has no GrpTRESMins caps set at all: this tool needs at "
                       "least one cap to report on; see README's 'What info does this need to work?'")
 CAP_KEYS = sorted(cap, key=lambda k: (k != "billing", not k.startswith("gres/gpu"), k))   # billing first, then GPU, then the rest alphabetically
 CAPS = {k: float(cap[k]) / 60 / tres_scale(k) for k in CAP_KEYS}
-PRIMARY = CAP_KEYS[0]             # the account's main capped resource -- billing if it has one
+PRIMARY = CAP_KEYS[0]             # the account's main capped resource (billing, if it has one)
 HAS_BILLING = "billing" in CAP_KEYS
 
 # ---- current (decayed) usage, per person ------------------------------------------------
@@ -336,7 +336,7 @@ table.pt{font-size:.74rem}table.pt th{font-size:.72rem}table.pt td{padding:.1rem
 # ---- "how are job costs calculated?" -----------------------------------------------------
 # Only built (and only the ~200KB of KaTeX CSS only loaded) when there's an actual weighted
 # billing model to explain. Otherwise the page shows the plain Slurm fields instead, in
-# bin/build_usage_page.py's CODE_BLOCK below -- no formula is invented for caps that aren't
+# bin/build_usage_page.py's CODE_BLOCK below. No formula is invented for caps that aren't
 # billing, since raw TRES caps (cpu/mem/node/GPU-hours on their own) aren't weighted at all.
 EQ, EX1, EX2 = {}, "", ""
 HAS_GPU_ANYWHERE = bool(gpu_parts)   # does any partition even have a GPU billing weight?
@@ -344,7 +344,7 @@ if HAS_COST_MODEL:
     def _tex_num(x): return f"{x:,.0f}".replace(",", "{,}")
     if HAS_GPU_ANYWHERE:
         _calc = rf"\begin{{array}}{{ll}}\text{{CPU hourly rate}} & = \text{{CPU cores}} \times \text{{Billing weight per core}}\\ \text{{RAM hourly rate}} & = \text{{RAM (GB)}} \times \text{{Billing weight per GB}}\\ \text{{GPU hourly rate}} & = \text{{Number of GPUs}} \times \text{{Billing weight per GPU}}\\[10pt] \text{{Hourly billing rate}} & = \max(\text{{CPU hourly rate}},\ \text{{RAM hourly rate}},\ \text{{GPU hourly rate}})\\[10pt] \color{{{ACCENT}}}\textbf{{Billing-hours}} & \color{{{ACCENT}}}\mathbf{{=}}\ \textbf{{Hourly billing rate}}\ \mathbf{{\times}}\ \textbf{{Time the job actually runs (in hours)}}\\ \color{{{ACCENT}}}\textbf{{GPU-hours}} & \color{{{ACCENT}}}\mathbf{{=}}\ \textbf{{Number of GPUs}}\ \mathbf{{\times}}\ \textbf{{Time the job actually runs (in hours)}}\end{{array}}"
-    else:   # no partition here has a GPU billing weight at all -- don't mention GPUs in the formula
+    else:   # no partition here has a GPU billing weight at all, so don't mention GPUs in the formula
         _calc = rf"\begin{{array}}{{ll}}\text{{CPU hourly rate}} & = \text{{CPU cores}} \times \text{{Billing weight per core}}\\ \text{{RAM hourly rate}} & = \text{{RAM (GB)}} \times \text{{Billing weight per GB}}\\[10pt] \text{{Hourly billing rate}} & = \max(\text{{CPU hourly rate}},\ \text{{RAM hourly rate}})\\[10pt] \color{{{ACCENT}}}\textbf{{Billing-hours}} & \color{{{ACCENT}}}\mathbf{{=}}\ \textbf{{Hourly billing rate}}\ \mathbf{{\times}}\ \textbf{{Time the job actually runs (in hours)}}\end{{array}}"
     TEX = {"calc": _calc}
     _ex_part = gpu_parts[0] if gpu_parts else order[0]    # a GPU partition if one exists, otherwise any partition, to make the worked example concrete
@@ -366,7 +366,7 @@ if HAS_COST_MODEL:
             print("KaTeX render failed (is Node.js + `npm install` in math/ set up?), showing plain LaTeX instead:", ex); return [f'<div class="katex-display"><span>{html.escape(t)}</span></div>' for t in items]
     EQ = dict(zip(TEX, render_tex(list(TEX.values()))))
 else:
-    # No billing cap and/or no TRESBillingWeights configured -- there's no weighted formula to
+    # No billing cap and/or no TRESBillingWeights configured, so there's no weighted formula to
     # show, so the page shows exactly what it actually computes for each capped resource instead.
     def _ident(k): return re.sub(r"\W+", "_", k).strip("_") or "tres"
     CODE_BLOCK = "\n".join(
@@ -401,7 +401,7 @@ def vbar_geom(key):
         else: mode = "out"
         items.append(dict(key=u, slot=slots[u], y=y, h=h, t2=t2, p2=p2, mode=mode, val=v))
     seen_out = False   # items are bottom-to-top, biggest-to-smallest; once one doesn't fit inside,
-    for it in items:   # nothing smaller stacked above it should either -- a bigger segment showing
+    for it in items:   # nothing smaller stacked above it should either: a bigger segment showing
         if seen_out: it["mode"] = "out"          # an outside label right below a smaller segment's
         elif it["mode"] == "out": seen_out = True  # inside label would look like an inconsistency
     outs = sorted([it for it in items if it["mode"] == "out"], key=lambda it: it["y"] + it["h"] / 2)
@@ -427,7 +427,7 @@ def vbar_svg(g):
     out.append(f'<rect class="frame" x="{BX}" y="{BAR_TOP}" width="{BW}" height="{BAR_H}"/>')
     for it in g["items"]: out.append(f'<rect class="hl" data-key="{e(it["key"])}" x="{BX}" y="{it["y"]:.2f}" width="{BW}" height="{it["h"]:.2f}"/>')
     return f'<div class="vw"><svg viewBox="0 0 {VW} {VH}" role="group" aria-label="{e(g["title"])} used by each person, out of the whole allowance">{"".join(out)}</svg></div>'
-BARS = [vbar_geom(k) for k in CAP_KEYS]      # one bar per capped resource -- however many that is
+BARS = [vbar_geom(k) for k in CAP_KEYS]      # one bar per capped resource, however many that is
 def vbars_html():
     cols = "".join(f'<div class="vcol"><div class="barlabel"><span class="bt">{e(g["title"])}</span><span class="bs">{e(g["sub"])}</span></div>{vbar_svg(g)}</div>' for g in BARS)
     return f'<div class="vbars">{cols}</div>'

@@ -3,11 +3,11 @@
 Optional: hosts the page at a free, public-but-unlisted `https://<your-project>.pages.dev` link
 that you can share (e.g. in Slack), without it being indexed by search engines (the page ships
 `noindex`/`robots.txt`/a `_headers` rule already). `setup.sh` does the credential-saving step for
-you — this page is the detail behind it.
+you: this page is the detail behind it.
 
 ## 1. Create a Cloudflare account
 
-https://dash.cloudflare.com/sign-up — the free plan is enough for this.
+https://dash.cloudflare.com/sign-up: the free plan is enough for this.
 
 ## 2. Get your Account ID
 
@@ -21,7 +21,7 @@ Log into the dashboard; the **Account ID** is in the right-hand sidebar of most 
 3. Use the **Edit Cloudflare Workers** template, or make a **Custom token** scoped to
    **Account → Cloudflare Pages → Edit** for your account. Either works; the custom one is
    narrower.
-4. Create it and copy the token immediately — Cloudflare only shows it once. Treat it like a
+4. Create it and copy the token immediately: Cloudflare only shows it once. Treat it like a
    password: it's saved only in `~/.config/<APP_SLUG>/cloudflare.env`, mode 600, never in the
    repo or in chat with anyone.
 
@@ -54,11 +54,11 @@ new `index.html`.
 
 ## Troubleshooting
 
-- **"CF_PROJECT is not set ... skipping"** — set it in `config.env`.
-- **"upload skipped: ... not found"** — the secrets file above is missing.
-- **"upload stopped: run chmod 600 ..."** — fix the file's permissions.
-- **"UPLOAD FAILED (exit N)"** — the page on the cluster is still updated locally; only the
+- **"CF_PROJECT is not set ... skipping"**: set it in `config.env`.
+- **"upload skipped: ... not found"**: the secrets file above is missing.
+- **"upload stopped: run chmod 600 ..."**: fix the file's permissions.
+- **"UPLOAD FAILED (exit N)"**: the page on the cluster is still updated locally; only the
   online copy failed. Check the printed `wrangler` output above that line (the token is masked).
   Common causes: an expired/revoked token, wrong account ID, or no internet access from the node
   running the job (some clusters only allow outbound internet from login nodes, not compute
-  nodes — run the daily job on a partition/node that has it).
+  nodes: run the daily job on a partition/node that has it).

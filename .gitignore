@@ -1,4 +1,4 @@
-# Per-installation, generated locally by setup.sh / the daily job — never commit these.
+# Per-installation, generated locally by setup.sh / the daily job: never commit these.
 # Anchored to the repo root so they don't also match demo/'s own tracked files.
 /config.env
 /refresh_daily.sbatch
@@ -14,7 +14,7 @@
 # Node
 math/node_modules/
 
-# Never — secrets live outside the repo, in ~/.config/<APP_SLUG>/, but ignore just in case
+# Never: secrets live outside the repo, in ~/.config/<APP_SLUG>/, but ignore just in case
 *.env
 !config.example.env
 !demo/config.env

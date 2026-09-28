@@ -4,7 +4,7 @@ bot. Each run also deletes the previous run's whole message (text + image) once 
 posted, so the channel only ever shows the latest one.
 Needs config.env (SLACK_ENABLED=true, CF_PROJECT or PUBLIC_URL) and secrets in
 ~/.config/<APP_SLUG>/slack.env (mode 600) with SLACK_BOT_TOKEN=... and SLACK_CHANNEL_ID=...
-(the bot needs the files:write and chat:write scopes, and must be invited to the channel — see
+(the bot needs the files:write and chat:write scopes, and must be invited to the channel: see
 docs/SLACK_SETUP.md; setup.sh writes this file for you). The token is never printed. Exits 0 with
 a message, doing nothing, if Slack isn't configured, so the daily job never breaks over this."""
 import os, sys, json, stat, subprocess, shutil, time, urllib.request, urllib.parse

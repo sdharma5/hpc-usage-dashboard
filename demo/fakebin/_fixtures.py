@@ -77,7 +77,7 @@ def jobs_since(cutoff_dt):
 
 def account_totals():
     """The account's current decayed billing total (what a real sshare would report). Only jobs
-    since the toy reset count -- Slurm's own usage total has already forgotten the older ones,
+    since the toy reset count: Slurm's own usage total has already forgotten the older ones,
     even though sacct still lists them. That gap is exactly what lets the page infer the reset."""
     bill = sum(decayed_contribution(j[2], j[4], j[5]) for j in JOBS if j[4] < RESET_DAYS_AGO)
     gpu = sum(j[3] * j[5] for j in JOBS if j[4] < RESET_DAYS_AGO) * 0.8   # a rough decayed-ish
@@ -85,7 +85,7 @@ def account_totals():
 
 
 def user_totals():
-    """Per-user shares, scaled so they add up to the account total -- a simplification (Slurm
+    """Per-user shares, scaled so they add up to the account total (a simplification: Slurm
     actually decays each user's usage independently), fine for a toy example."""
     bill_total, gpu_total = account_totals()
     raw_bill = {u: 0.0 for u in USERS}

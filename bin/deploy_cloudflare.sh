@@ -7,7 +7,7 @@
 set -e
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(dirname "$HERE")"
-[ -f "$ROOT/config.env" ] || { echo "no config.env — run ./setup.sh first"; exit 1; }
+[ -f "$ROOT/config.env" ] || { echo "no config.env: run ./setup.sh first"; exit 1; }
 set -a; . "$ROOT/config.env"; set +a
 APP_SLUG="${APP_SLUG:-hpc-usage}"
 [ -n "$CF_PROJECT" ] || { echo "CF_PROJECT is not set in config.env; skipping Cloudflare upload"; exit 0; }
