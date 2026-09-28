@@ -1,11 +1,15 @@
 ![hpc-usage-dashboard](docs/title.svg)
 
-A simple HTML dashboard, updated daily, for a lab's shared compute allocation. It shows how compute usage for each allocation type, usage by lab member, recent job statistics, and (optionally) what a job costs on each partition. A daily `sbatch` job
-rebuilds it from Slurm's own accounting. Host it wherever you like (e.g. a free Cloudflare Pages
-link), and optionally post the usage bars to Slack every morning.
+A simple HTML dashboard, updated daily, for a lab's shared compute allocation. It shows usage for
+each capped resource, usage by lab member, recent job statistics, and, when the cluster prices
+jobs by a weighted formula, what a job costs on each partition. A daily `sbatch` job rebuilds it
+from Slurm's own accounting. Host it wherever you like (e.g. a free Cloudflare Pages link), and
+optionally post the usage bars to Slack every morning.
 
-The dashboard works on any cluster using Slurm to schedule jobs and track usage. It finds a cluster's allocation types (e.g. billing-hours and gpu-hours) and builds one usage bar per allocation type. Billing-hours and GPU-hours (Skipjack's setup) are the running example in this README,
-but the same tool works for an account with other allocation types.
+The dashboard works on any cluster using Slurm to schedule jobs and track usage. It finds whatever
+your account is actually capped on and builds one usage bar per capped resource. Billing-hours and
+GPU-hours (Skipjack's setup) are the running example in this README, but the same tool works for
+an account capped on anything else.
 
 <img src="docs/screenshots/demo-bars.png" alt="Two usage bars, billing-hours and GPU-hours, broken down by person" width="70%">
 
