@@ -26,7 +26,7 @@ usage) you can run yourself with no Slurm access at all: see [Try it without Slu
 - _Dropdown_ explanations of how billing-hours and GPU-hours are calculated and whether usage resets,
   with the equations typeset when Node.js is available, plain text otherwise.
 
-![The equations, reset explanation, recent-activity table, and job cost table, from the demo](docs/screenshots/demo-details.png)
+![The full dashboard: bars, recent-activity table, and job cost table, from the demo](docs/screenshots/demo-details.png)
 
 ## What info does this need to work?
 
