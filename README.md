@@ -8,7 +8,8 @@ of the usage bars to your lab's Slack every day at some user-set time.
 This tool works on any cluster that
 uses Slurm to schedule jobs and track usage.
 
-![Two usage bars, billing-hours and GPU-hours, broken down by person](docs/screenshots/demo-bars.png)
+<img src="docs/screenshots/demo-bars.png" alt="Two usage bars, billing-hours and GPU-hours, broken down by person" width="70%">
+
 
 This is from `demo/`, a fully fabricated example (fictional lab, fictional cluster, fictional
 usage) you can run yourself with no Slurm access at all: see [Try it without Slurm](#try-it-without-slurm) below.
