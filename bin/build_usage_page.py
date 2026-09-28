@@ -215,7 +215,13 @@ for u, _ in named:          # keep a person's colour from day to day, unless som
     sl = old_slots.get(u)
     if isinstance(sl, int) and 1 <= sl <= NSLOT and sl not in slots.values(): slots[u] = sl
 for u, _ in named:
-    if u not in slots: slots[u] = next(i for i in range(1, NSLOT + 1) if i not in slots.values())
+    if u in slots: continue
+    free = [i for i in range(1, NSLOT + 1) if i not in slots.values()]
+    if free: slots[u] = free[0]                          # the common case: everyone gets their own colour
+    else:                                                 # more named people than colour slots: reuse
+        counts = {}                                       # whichever slot is currently shared by the
+        for sl in slots.values(): counts[sl] = counts.get(sl, 0) + 1   # fewest people, so reuse spreads
+        slots[u] = min(range(1, NSLOT + 1), key=lambda i: counts.get(i, 0))   # out as evenly as possible
 json.dump(slots, open(COLORS_FILE, "w"), indent=1)
 
 def prow(name, r):
