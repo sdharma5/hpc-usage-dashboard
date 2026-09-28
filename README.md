@@ -70,9 +70,19 @@ sbatch refresh_daily.sbatch         # runs now, then re-schedules itself daily
 ## How does the daily refresh work?
 
 Most shared clusters don't allow a user's own cron or scrontab, so `refresh_daily.sbatch`
-resubmits itself. Each run queues tomorrow's run first (only if one isn't already waiting), then
-rebuilds the page, uploads it to Cloudflare if that's configured, and posts to Slack if that's
-configured. Queuing the next run first means a failed rebuild can't break the daily chain.
+resubmits itself, one job at a time, chained day after day. Each run does four things in order:
+
+1. Queues tomorrow's run, at the time you set in setup, but only if one isn't already waiting.
+   This happens first, so even if the rest of the run fails, the chain keeps going the next day.
+2. Rebuilds the page: polls Slurm (`sacctmgr`, `sshare`, `sacct`, `scontrol`) for the account's
+   caps, current usage, recent jobs, and partition weights, and regenerates `index.html` from
+   scratch.
+3. Uploads the new page to Cloudflare, if that's configured.
+4. Posts the usage bars to Slack, if that's configured.
+
+Nothing is scheduled outside Slurm itself: there's no cron, no external timer, no server running
+between refreshes. Between runs, the page just sits there as a static file until the next job
+wakes up and rewrites it.
 
 Check it's running: `squeue -u $USER -n <APP_SLUG>-daily`
 
