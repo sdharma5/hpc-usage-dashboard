@@ -22,8 +22,7 @@ with no Slurm access: see [Try it without Slurm](#try-it-without-slurm).
   the example), broken down by person. Colors are generated from one accent color you pick.
 - What ran since the last reset (or the past 30 days, if the cluster doesn't reset usage), by
   partition: jobs, hours charged against each capped resource, average job length.
-- If the cluster prices jobs with a weighted billing formula: what a job costs now, for a reference
-  job size you choose, and how long you could keep running it on each partition, with the cheapest
+- If the cluster prices jobs with a weighted billing formula: what a (reference) job costs now and how long you could keep running it on each partition, with the cheapest
   and priciest GPU partitions colored green to red.
 - Dropdown explanations of how the numbers are calculated and whether usage resets, equations
   typeset when Node.js is available, plain text otherwise. With no weighted formula to explain,
