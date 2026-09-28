@@ -132,13 +132,23 @@ def charges(since):
 
 # ---- partition weights (only meaningful if this account has a billing cap) -------------
 weights = {}
+def _mem_weight_per_gb(s):
+    """TRESBillingWeights' Mem entry can be written per MB (no suffix -- Slurm's native unit for
+    memory), or per KB/GB/TB/PB (a K/G/T/P suffix), at whoever configured that partition's
+    choice. Normalize whichever one it is to a weight per GB, since that's the unit the rest of
+    this script (and REF_GB) uses."""
+    m = re.match(r"^([\d.]+)\s*([KMGTP]?)B?$", (s or "0").strip(), re.I)
+    if not m: return 0.0
+    val, suf = float(m.group(1)), m.group(2).upper()
+    per_gb = {"": 1024.0, "K": 1024.0 * 1024, "M": 1024.0, "G": 1.0, "T": 1.0 / 1024, "P": 1.0 / 1024 ** 2}
+    return val * per_gb.get(suf, 1024.0)
 for line in sh("scontrol show partition -o").splitlines():
     f = dict(x.split("=", 1) for x in line.split() if "=" in x)
     w = f.get("TRESBillingWeights")
     if not w: continue
     d = tres(w)
     gpu_w = next((float(v) for kk, v in d.items() if kk.upper().startswith("GRES/GPU")), 0.0)   # matches GRES/gpu or a typed GRES/gpu:a100
-    weights[f["PartitionName"]] = (float(d.get("CPU", 0)), float(d.get("Mem", "0G").rstrip("G")), gpu_w)
+    weights[f["PartitionName"]] = (float(d.get("CPU", 0)), _mem_weight_per_gb(d.get("Mem")), gpu_w)
 HAS_COST_MODEL = HAS_BILLING and bool(weights)   # is there a real per-partition weighted cost model to show?
 
 def detect_reset(window_days=100, step_h=3):
