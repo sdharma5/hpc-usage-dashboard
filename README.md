@@ -1,16 +1,13 @@
 # hpc-usage-dashboard
 
-A plain static usage page for a shared Slurm allocation. Shows how much compute is left, who's
-used what, what ran recently, and what a job costs on each partition. No framework, no backend,
-no database. A daily `sbatch` job rebuilds it from Slurm's own accounting, you host it wherever
-you want (a free Cloudflare Pages link works fine), and it can optionally post a picture of the
-usage bars to Slack every morning.
+A plain static usage page for a lab's shared compute allocation. Shows how much compute is left,
+who's used what, what ran recently, and what a job costs on each partition. No framework, no
+backend, no database. A daily `sbatch` job rebuilds it from Slurm's own accounting, you host it
+wherever you want (a free Cloudflare Pages link works fine), and it can optionally post a picture
+of the usage bars to Slack every morning.
 
-Slurm isn't a cluster. It's the scheduler and accounting database that a cluster runs: the thing
-behind `sbatch`, `squeue`, `sacct`, and the thing that tracks who's used what against an
-allocation. Your cluster has its own name (in config.env this is `CLUSTER_NAME`), and this tool
-works on any cluster that uses Slurm to schedule jobs and track usage, whatever that cluster is
-called.
+Your cluster has its own name (in config.env this is `CLUSTER_NAME`), and this tool works on any
+cluster that uses Slurm to schedule jobs and track usage.
 
 ## What it shows
 
