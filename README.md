@@ -43,11 +43,10 @@ At build time, the page reads the account's
 like `gres/gpu:a100`), `cpu`, `mem`, `node`, a `license/*`, etc.
 
 The cost table only appears with a `billing` cap and `TRESBillingWeights` configured
-(`scontrol show partition`). 
+(`scontrol show partition`).
 
-_This dashboard only works for clusters whose accounting runs through Slurm's own TRES/billing system, not a
-separate ledger (e.g. "service units") tracked outside Slurm. Check with `sacctmgr` if unsure. An adaptor may be written for a separate ledger.
-_
+_This dashboard only works for clusters whose accounting runs through Slurm's own TRES/billing system, not a separate ledger (e.g. "service units") tracked outside Slurm. Check with `sacctmgr` if unsure. An adaptor may be written for a separate ledger._
+
 Optional:
 - Node.js, for typeset equations (KaTeX) instead of plain LaTeX text.
 - Firefox or Chrome/Chromium, headless, only needed for the Slack post (screenshots the bars).
@@ -121,8 +120,9 @@ clean up)
 - Current usage: `sshare -A <acct> -a`, Slurm's own decayed usage total per user (the same
   numbers Slurm uses to throttle new jobs).
 - Reset detection: your cluster may reset usage on a schedule (`PriorityUsageResetPeriod`). Slurm
-  doesn't expose the last reset date, so the page estimates it based on current usage metrics and decay rate.
-   _Use an actual reset date from your cluster admins if you have one._
+  doesn't expose the last reset date, so the page infers it: it tests candidate start dates against
+  job records, fading old jobs by the decay rate, and keeps whichever date best reproduces Slurm's
+  current total. _Use an actual reset date from your cluster admins if you have one._
 - Job cost table: only shown with a billing cap and `TRESBillingWeights` configured
   (`scontrol show partition`), applied to the reference job size from setup with Slurm's own max()
   rule. Otherwise the page shows the plain Slurm fields behind each cap instead.
