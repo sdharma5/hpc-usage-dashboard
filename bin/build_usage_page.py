@@ -104,7 +104,14 @@ def tres_info(key):
 def tres_scale(key): return 1024.0 if key == "mem" else 1.0   # Slurm reports mem in MB; show GB
 
 step("Checking your account's caps...")
-cap = tres(sh(f"sacctmgr -n -P show assoc where account={ACCOUNT} user= format=GrpTRESMins%200").strip().splitlines()[0])
+_cap_lines = sh(f"sacctmgr -n -P show assoc where account={ACCOUNT} user= format=GrpTRESMins%200").strip().splitlines()
+if not _cap_lines:
+    raise SystemExit(f"sacctmgr found no association at all for account '{ACCOUNT}' (the query returned "
+                      "nothing). This usually means the account name is wrong, or it's not a real Slurm "
+                      "account (e.g. a storage/scratch allocation name rather than a compute one). Run "
+                      f"`sacctmgr show account {ACCOUNT}` and `sacctmgr -n show assoc where account={ACCOUNT}` "
+                      "yourself to check.")
+cap = tres(_cap_lines[0])
 if not cap:
     raise SystemExit(f"account {ACCOUNT} has no GrpTRESMins caps set at all: this tool needs at "
                       "least one cap to report on; see README's 'What info does this need to work?'")

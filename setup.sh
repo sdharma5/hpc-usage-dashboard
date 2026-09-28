@@ -44,6 +44,10 @@ ACCOUNT="$(ask "Which Slurm account (allocation) should this track? Usually your
 if command -v sacctmgr >/dev/null 2>&1; then
   if ! sacctmgr -n show account "$ACCOUNT" >/dev/null 2>&1; then
     echo "warning: 'sacctmgr show account $ACCOUNT' found nothing, double check the name."
+  elif [ -z "$(sacctmgr -n show assoc where account="$ACCOUNT" user= 2>/dev/null)" ]; then
+    echo "warning: '$ACCOUNT' exists as an account, but has no association with its own caps set"
+    echo "(sacctmgr show assoc where account=$ACCOUNT user= found nothing). This is often a"
+    echo "storage/scratch allocation name rather than a compute account -- double check the name."
   fi
 fi
 DEFAULT_PARTITION="${PARTITION:-}"
