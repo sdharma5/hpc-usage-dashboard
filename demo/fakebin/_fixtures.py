@@ -14,7 +14,7 @@ K = H / math.log(2)
 CAP_BILL_H = 6000.0
 CAP_GPU_H = 80.0
 RESET_DAYS_AGO = 20.0   # the boundary between "since the toy reset" jobs and older, forgotten ones
-ZERO_USERS = ["hudson"]   # on the account, but hasn't run a job: exercises the "0 hrs, 0%" case
+GHOST_USERS = ["moran"]   # zero usage AND no job in the last 90 days: should be dropped entirely
 
 PARTITIONS = {   # name -> (cpu weight, mem weight per GB, gpu weight) | None = no TRESBillingWeights at all
     "yard": None,                        # deliberately unconfigured: shows up in "what ran", not in "what a job costs"
@@ -34,6 +34,7 @@ JOBS = [
     ("mycroft", "reichenbach", 500, 1, 4.0, 2.0), ("mycroft", "yard", 0, 0, 15.0, 4.0), ("mycroft", "hound", 60, 1, 1.0, 5.0),
     ("adler", "yard", 0, 0, 6.0, 8.0), ("adler", "yard", 0, 0, 12.0, 1.0), ("adler", "reichenbach", 500, 1, 16.0, 1.0),
     ("moriarty", "yard", 0, 0, 18.0, 0.5), ("moriarty", "yard", 0, 0, 2.0, 1.0), ("moriarty", "hound", 60, 1, 8.0, 2.0),
+    ("hudson", "yard", 0, 0, 2.0, 1.0),   # recently active (shows up in ACTIVE_RECENT) but zero billing either way
     # older jobs, from before the toy reset: real Slurm's own usage total has already forgotten these
     ("watson", "reichenbach", 500, 1, 25.0, 10.0), ("lestrade", "reichenbach", 500, 1, 32.0, 6.0),
     ("holmes", "hound", 60, 1, 40.0, 20.0), ("mycroft", "reichenbach", 500, 1, 55.0, 8.0),

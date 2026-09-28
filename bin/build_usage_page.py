@@ -128,6 +128,15 @@ for line in sh(f"sshare -A {ACCOUNT} -a -P -n -o User,GrpTRESRaw%400").splitline
     used[u.strip() or "(account)"] = {k: float(t.get(k, 0)) / 60 / tres_scale(k) for k in CAP_KEYS}
 TOT = used.pop("(account)")
 LEFT = {k: CAPS[k] - TOT.get(k, 0.0) for k in CAP_KEYS}
+
+step("Checking who's been active recently...")
+_active_since = (dt.datetime.now() - dt.timedelta(days=90)).strftime("%Y-%m-%dT%H:%M:%S")
+ACTIVE_RECENT = {line.strip() for line in sh(f"sacct -A {ACCOUNT} -a -X -S {_active_since} -P -n --format=User").splitlines() if line.strip()}
+# sshare -a lists everyone who has ever touched this account, including people long gone. Anyone
+# at zero across every capped resource AND not seen in a job in the last 90 days is dropped
+# entirely (not shown as a "0 hrs" line, doesn't take a colour slot), so old departed members
+# don't clutter the page or burn through the limited colour slots.
+used = {u: v for u, v in used.items() if any(v[k] > 0 for k in CAP_KEYS) or u in ACTIVE_RECENT}
 users = sorted(used.items(), key=lambda r: tuple(-r[1][k] for k in CAP_KEYS) + (r[0],))   # biggest first
 
 # ---- recent charges from sacct --------------------------------------------------------

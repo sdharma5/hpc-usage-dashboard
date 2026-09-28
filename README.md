@@ -118,7 +118,10 @@ clean up)
 - Caps: `sacctmgr show assoc ... format=GrpTRESMins`, converted from minutes to hours, one bar per
   capped resource found.
 - Current usage: `sshare -A <acct> -a`, Slurm's own decayed usage total per user (the same
-  numbers Slurm uses to throttle new jobs).
+  numbers Slurm uses to throttle new jobs). `sshare` lists everyone who's ever touched the
+  account, including people long gone, so anyone at zero across every capped resource who also
+  hasn't run a job in the last 90 days is left off the page entirely, rather than piling up as a
+  long list of "0 hrs" lines for departed members.
 - Reset detection: your cluster may reset usage on a schedule (`PriorityUsageResetPeriod`). Slurm
   doesn't expose the last reset date, so the page infers it: it tests candidate start dates against
   job records, fading old jobs by the decay rate, and keeps whichever date best reproduces Slurm's

@@ -26,3 +26,6 @@ if fmt.startswith("User,Partition"):
 elif fmt.startswith("Start,End"):
     for user, part, rate, gpus, start, end, hours in rows:
         print(f"{fmt_dt(start)}|{fmt_dt(end)}|billing={rate},gres/gpu={gpus}")
+elif fmt.startswith("User"):   # bare user list, e.g. the "who's been active recently" check
+    for user in dict.fromkeys(user for user, *_ in rows):   # unique, keeps first-seen order
+        print(user)
