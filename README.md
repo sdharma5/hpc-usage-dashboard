@@ -9,6 +9,10 @@ usage bars to Slack every morning.
 Built first for one lab's cluster. This is the general version, so any lab on any Slurm cluster
 can use it.
 
+Slurm is the job scheduler, the thing behind `sbatch`, `squeue`, `sacct`. It's not a cluster's
+name, it's the software most clusters use to manage jobs. Your cluster has its own name (in
+config.env this is `CLUSTER_NAME`), and this tool works on it as long as it runs Slurm.
+
 ## What it shows
 
 - Allowance left, as two bars (billing-hours and GPU-hours), broken down by person. Colors are
