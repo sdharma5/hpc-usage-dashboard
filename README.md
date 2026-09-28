@@ -23,7 +23,7 @@ usage) you can run yourself with no Slurm access at all: see [Try it without Slu
 - What a job costs right now: for a reference job size you choose, the billing rate and how long
   you could keep running it on each partition, with the cheapest and priciest GPU partitions
   colored green to red.
-- Plain explanations of how billing-hours and GPU-hours are calculated and whether usage resets,
+- _Dropdown_ explanations of how billing-hours and GPU-hours are calculated and whether usage resets,
   with the equations typeset when Node.js is available, plain text otherwise.
 
 ![The equations, reset explanation, recent-activity table, and job cost table, from the demo](docs/screenshots/demo-details.png)
