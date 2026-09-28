@@ -3,8 +3,8 @@
 A simple, daily-updated HTML dashboard for a lab's shared compute allocation. It shows usage (by
 each lab member) for each capped resource, recent job statistics, and (when relevant) what a job
 costs on each partition. A daily `sbatch` job rebuilds it from Slurm's own accounting. Host it
-wherever you like (e.g. a free Cloudflare Pages link), and optionally post the usage bars to Slack
-every morning.
+wherever you like (e.g. a free Cloudflare Pages link), and optionally post the usage bars to your lab's Slack
+every day at some user-set time.
 
 The dashboard works on any cluster using Slurm to schedule jobs and track usage. It finds whatever
 resources your account is actually capped on and builds one usage bar per capped resource.
