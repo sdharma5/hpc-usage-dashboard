@@ -27,9 +27,7 @@ This assumes a standard Slurm setup:
 - An account with `GrpTRESMins` caps for billing and, optionally, GPU minutes, i.e.
   `sacctmgr show assoc where account=<acct> format=GrpTRESMins` returns something.
 - `TRESBillingWeights` configured on your partitions (`scontrol show partition` shows
-  `TRESBillingWeights=...`), so a job's hourly rate is `max(cores x weight, GB x weight,
-  gpus x weight)`. You don't choose which partitions show up: the dashboard automatically
-  includes every partition that has this set, and leaves out any that don't.
+  `TRESBillingWeights=...`)
 - Read access to `sacctmgr`, `sshare`, `sacct` and `scontrol` for that account. This is just the same info `sshare -A <acct>` already shows you.
 - Python 3, and a login or submit node to run the daily job from.
 
