@@ -1,18 +1,17 @@
 # hpc-usage-dashboard
 
 A plain static usage page for a lab's shared compute allocation. It shows how much compute is
-left, who's used what, what ran recently, and what a job costs on each partition. No framework,
-no backend, no database: a daily `sbatch` job rebuilds it from Slurm's own accounting, you host it
-wherever you like (a free Cloudflare Pages link works well), and it can optionally post a picture
-of the usage bars to Slack each morning.
+left, who's used what, what ran recently, and what a job costs on each partition. A daily `sbatch` job rebuilds it from Slurm's own accounting, and you can host it
+wherever you like (ex. a free Cloudflare Pages link). It can optionally post a picture
+of the usage bars to your lab's Slack every day at some user-set time.
 
 Your cluster has its own name (`CLUSTER_NAME` in config.env). This tool works on any cluster that
 uses Slurm to schedule jobs and track usage.
 
-## What it shows
+## What's in the dashboard?
 
-- Allowance left, as two bars (billing-hours and GPU-hours), broken down by person. Colors are
-  generated from one accent color you pick, so each lab's page looks different but consistent.
+- Allowance left, as two bars (billing-hours and GPU-hours), broken down by each lab members' specific usage. Colors are
+  generated from one accent color you pick.
 - What ran since the last reset (or the past 30 days, if the cluster doesn't reset usage), by
   partition: jobs, billing-hours, GPU-hours, average job length.
 - What a job costs right now: for a reference job size you choose, the billing rate and how long
@@ -21,7 +20,7 @@ uses Slurm to schedule jobs and track usage.
 - Plain explanations of how billing-hours and GPU-hours are calculated and whether usage resets,
   with the equations typeset when Node.js is available, plain text otherwise.
 
-## What it needs from your cluster
+## What info does this need to work?
 
 This assumes a standard Slurm setup:
 
@@ -30,8 +29,7 @@ This assumes a standard Slurm setup:
 - `TRESBillingWeights` configured on at least the partitions you care about
   (`scontrol show partition` shows `TRESBillingWeights=...`), so a job's hourly rate is
   `max(cores x weight, GB x weight, gpus x weight)`.
-- Read access to `sacctmgr`, `sshare`, `sacct` and `scontrol` for that account. This requires no
-  elevated privileges: it's the same information `sshare -A <acct>` already shows you.
+- Read access to `sacctmgr`, `sshare`, `sacct` and `scontrol` for that account. This is just the same info `sshare -A <acct>` already shows you.
 - Python 3, and a login or submit node to run the daily job from.
 
 Optional, not required:
@@ -69,7 +67,7 @@ python3 bin/build_usage_page.py     # builds index.html once, to check it
 sbatch refresh_daily.sbatch         # runs now, then re-schedules itself daily
 ```
 
-## How the daily refresh works
+## How does the daily refresh work?
 
 Most shared clusters don't allow a user's own cron or scrontab, so `refresh_daily.sbatch`
 resubmits itself. Each run queues tomorrow's run first (only if one isn't already waiting), then
@@ -81,7 +79,7 @@ Check it's running: `squeue -u $USER -n <APP_SLUG>-daily`
 Stop it: `scancel -u $USER -n <APP_SLUG>-daily` (this cancels the waiting future run; there's
 nothing else to clean up)
 
-## How the numbers are computed
+## How is usage computed?
 
 - Caps: `sacctmgr show assoc ... format=GrpTRESMins`, converted from minutes to hours.
 - Current usage: `sshare -A <acct> -a`, Slurm's own decayed usage total per person, the same
