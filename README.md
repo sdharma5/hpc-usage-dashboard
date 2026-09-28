@@ -42,7 +42,7 @@ Optional, not required:
 ## Setup
 
 ```
-git clone <this repo> hpc-usage-dashboard
+git clone https://github.com/sdharma5/hpc-usage-dashboard.git
 cd hpc-usage-dashboard
 ./setup.sh
 ```
@@ -97,8 +97,8 @@ nothing else to clean up)
   doesn't expose the last reset date directly, so the page infers it: it tests every possible
   start date over the last 100 days against the account's job records, fading old jobs by the
   cluster's own decay half-life, and keeps whichever date best reproduces Slurm's current total.
- This "reset date" is inferred. IE, it's preferable to use an _actual_ reset date that is given by your cluster admins.
-
+  This "reset date" is inferred, i.e. it's preferable to use an _actual_ reset date given by your
+  cluster admins.
 - Job cost table: `scontrol show partition` for `TRESBillingWeights`, applied to the reference
   job size from setup, using Slurm's own max() billing rule.
 
