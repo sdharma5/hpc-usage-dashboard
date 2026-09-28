@@ -98,9 +98,8 @@ nothing else to clean up)
   doesn't expose the last reset date directly, so the page infers it: it tests every possible
   start date over the last 100 days against the account's job records, fading old jobs by the
   cluster's own decay half-life, and keeps whichever date best reproduces Slurm's current total.
-  It only reports a reset when the fit is clearly better than assuming none happened; otherwise
-  it says nothing. The page marks this as inferred, not confirmed, so check the actual schedule
-  with your cluster admins if it matters.
+ This "reset date" is inferred. IE, it's preferable to use an _actual_ reset date that is given by your cluster admins.
+
 - Job cost table: `scontrol show partition` for `TRESBillingWeights`, applied to the reference
   job size from setup, using Slurm's own max() billing rule.
 
