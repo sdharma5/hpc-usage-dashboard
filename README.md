@@ -1,12 +1,18 @@
 ![hpc-usage-dashboard](docs/title.svg)
 
-A simple HTML dashboard, updated daily, with details about your lab’s shared compute allocation. It shows how much compute is
-left, who's used what, what ran recently, and what a job costs on each partition. A daily `sbatch` job rebuilds it from Slurm's own accounting, and you can host it
-wherever you like (ex. a free Cloudflare Pages link). It can optionally post a picture
-of the usage bars to your lab's Slack every day at some user-set time.
+A simple HTML dashboard, updated daily, for a lab's shared compute allocation. It shows how much
+of each thing your cluster caps is left, who's used what, what ran recently, and (when the cluster
+prices jobs by a weighted formula) what a job costs on each partition. A daily `sbatch` job
+rebuilds it from Slurm's own accounting, and you can host it wherever you like (e.g. a free
+Cloudflare Pages link). It can optionally post a picture of the usage bars to your lab's Slack
+every day at some user-set time.
 
-This tool works on any cluster that
-uses Slurm to schedule jobs and track usage.
+This tool works on any cluster that uses Slurm to schedule jobs and track usage. It doesn't assume
+your cluster caps billing-hours and GPU-hours specifically, or any particular combination: it
+reads whatever your account is actually capped on and builds the page around that, one bar, one
+label, one set of numbers per capped resource. Billing-hours and GPU-hours (Skipjack's setup) are
+used as the running example throughout this README, but the same tool works just as well for an
+account capped only on CPU-hours, or on a software license, or on five different things at once.
 
 <img src="docs/screenshots/demo-bars.png" alt="Two usage bars, billing-hours and GPU-hours, broken down by person" width="70%">
 
@@ -16,15 +22,18 @@ usage) you can run yourself with no Slurm access at all: see [Try it without Slu
 
 ## What's in the dashboard?
 
-- How much of the allocation is left. This is illustrated with two usage bars (billing-hours and GPU-hours) broken down by each lab members' specific usage. Colors are
-  generated from one accent color you pick.
+- How much of each capped resource is left, as one bar per resource (in the example, billing-hours
+  and GPU-hours), broken down by each lab member's usage. Colors are generated from one accent
+  color you pick.
 - What ran since the last reset (or the past 30 days, if the cluster doesn't reset usage), by
-  partition: (how many jobs, billing-hours, GPU-hours, and average job length per partition)
-- What a job costs right now: for a reference job size you choose, the billing rate and how long
-  you could keep running it on each partition, with the cheapest and priciest GPU partitions
-  colored green to red.
-- _Dropdown_ explanations of how billing-hours and GPU-hours are calculated and whether usage resets,
-  with the equations typeset when Node.js is available, plain text otherwise.
+  partition: jobs, hours charged against each capped resource, and average job length.
+- If the cluster prices jobs with a weighted billing formula: what a job costs right now, for a
+  reference job size you choose, and how long you could keep running it on each partition, with
+  the cheapest and priciest GPU partitions colored green to red.
+- _Dropdown_ explanations of how those numbers are calculated and whether usage resets, with
+  equations typeset when Node.js is available, plain text otherwise. If there's no weighted
+  billing formula to explain, this becomes a short code snippet naming the exact Slurm fields
+  instead of an invented formula.
 
 ![The full dashboard: bars, recent-activity table, and job cost table, from the demo](docs/screenshots/demo-details.png)
 
@@ -37,16 +46,15 @@ This assumes a standard Slurm setup:
 - Read access to `sacctmgr`, `sshare`, `sacct` and `scontrol` for that account. This is just the same info `sshare -A <acct>` already shows you.
 - Python 3, and a login or submit node to run the daily job from.
 
-**Whatever is actually capped is what gets shown, nothing is hardcoded to billing-hours and
-GPU-hours.** At build time the page reads the account's own `GrpTRESMins` and draws one bar per
-capped resource, correctly labeled: `billing`, `gres/gpu` (or a specific GPU type like
-`gres/gpu:a100`), `cpu`, `mem`, `node`, a `license/*`, or anything else Slurm reports gets a
-sensible name derived from its own key rather than being mistaken for something else. One cap, two
-caps, five caps, it doesn't matter, and you don't need to know in advance which kind of account
-you have; the same `setup.sh`/`config.env` works everywhere.
+**Whatever is actually capped is what gets shown.** At build time the page reads the account's own
+`GrpTRESMins` and draws one bar per capped resource, correctly labeled: `billing`, `gres/gpu` (or a
+specific GPU type like `gres/gpu:a100`), `cpu`, `mem`, `node`, a `license/*`, or anything else
+Slurm reports gets a sensible name derived from its own key rather than being mistaken for
+something else. One cap, two caps, five caps, it doesn't matter, and you don't need to know in
+advance which kind of account you have; the same `setup.sh`/`config.env` works everywhere.
 
-The "what a job costs now" table and its equations are the one part that's inherently specific:
-they only make sense when the account has a `billing` cap *and* the cluster has
+The "what a job costs now" table and its equations are the one part that's inherently specific to
+one setup: they only make sense when the account has a `billing` cap *and* the cluster has
 `TRESBillingWeights` configured on its partitions (`scontrol show partition` shows
 `TRESBillingWeights=...`), since that's what a per-partition weighted rate actually is. When that
 setup isn't there, the page doesn't invent a formula for something it doesn't apply to — it drops
@@ -135,7 +143,7 @@ nothing else to clean up)
 ## How is usage computed?
 
 - Caps: `sacctmgr show assoc ... format=GrpTRESMins`, converted from minutes to hours, one bar
-  per capped resource found (see above).
+  per capped resource found (see above, e.g. billing and GPU-hours on a Skipjack-style account).
 - Current usage: `sshare -A <acct> -a`, Slurm's own decayed usage total per person, the same
   numbers Slurm uses to throttle new jobs.
 - Reset detection: your cluster may reset usage on a schedule (`PriorityUsageResetPeriod`). Slurm
@@ -155,9 +163,10 @@ nothing else to clean up)
 - Colors: set `ACCENT` in `config.env`; the rest of the per-person palette is generated from it
   automatically. Each person keeps the same color from day to day (`user_colors.json`, regenerated
   each run, not meant to be hand-edited).
-- Reference job size, refresh time, account, and which partition the daily job runs on: all in
-  `config.env`; re-run `./setup.sh` or edit the file and rebuild. Which partitions *appear* on the
-  page isn't something you set: that's automatic, from whichever ones have `TRESBillingWeights`.
+- Reference job size (e.g. CPU cores and RAM, used for the cost table when there is one), refresh
+  time, account, and which partition the daily job runs on: all in `config.env`; re-run
+  `./setup.sh` or edit the file and rebuild. Which partitions *appear* on the page isn't something
+  you set: that's automatic, from whichever ones have `TRESBillingWeights`.
 - Wording: `bin/build_usage_page.py` is one plain Python file generating HTML strings, with no
   templating engine, so any sentence on the page is a string you can search for and change.
 
