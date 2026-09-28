@@ -59,6 +59,8 @@ def tres(s):
             k, v = kv.split("=", 1); d[k] = v
     return d
 
+def step(msg): print(msg, flush=True)   # progress messages -- some of these Slurm queries take a while on a busy cluster
+
 def hours(s):                       # Slurm "D-HH:MM:SS" | "HH:MM:SS" | "MM:SS"
     s = s.strip()
     if not s: return 0.0
@@ -101,6 +103,7 @@ def tres_info(key):
     return f"{key}-hours", f"{key}-hours"
 def tres_scale(key): return 1024.0 if key == "mem" else 1.0   # Slurm reports mem in MB; show GB
 
+step("Checking your account's caps...")
 cap = tres(sh(f"sacctmgr -n -P show assoc where account={ACCOUNT} user= format=GrpTRESMins%200").strip().splitlines()[0])
 if not cap:
     raise SystemExit(f"account {ACCOUNT} has no GrpTRESMins caps set at all: this tool needs at "
@@ -111,6 +114,7 @@ PRIMARY = CAP_KEYS[0]             # the account's main capped resource (billing,
 HAS_BILLING = "billing" in CAP_KEYS
 
 # ---- current (decayed) usage, per person ------------------------------------------------
+step("Checking current usage...")
 used = {}
 for line in sh(f"sshare -A {ACCOUNT} -a -P -n -o User,GrpTRESRaw%400").splitlines():
     u, raw = line.split("|", 1); t = tres(raw)
@@ -131,6 +135,7 @@ def charges(since):
     return rows
 
 # ---- partition weights (only meaningful if this account has a billing cap) -------------
+step("Checking partition costs...")
 weights = {}
 def _mem_weight_per_gb(s):
     """TRESBillingWeights' Mem entry can be written per MB (no suffix -- Slurm's native unit for
@@ -178,12 +183,14 @@ def detect_reset(window_days=100, step_h=3):
     best, none_reset = float(errs.min()), float(errs[0]); plateau = ages[errs <= best + 0.01]; T = now_ - dt.timedelta(hours=float(np.median(plateau)))
     print(f"reset detection (on {tres_info(PRIMARY)[0]}): best fit counting from {T:%Y-%m-%d %H:%M} (error {100 * best:.1f}%); counting everything would be off by {100 * none_reset:.0f}%")
     return T if (best <= 0.05 and none_reset - best >= 0.08 and T > w0 + dt.timedelta(days=2)) else None
+step("Checking whether usage resets (this can take a while on a busy account)...")
 try: _reset = detect_reset()
 except Exception as ex: print("reset detection failed:", ex); _reset = None
 RESET_SENTENCE = (f'A reset appears to have happened around <b class="rd">{_reset.strftime("%b %d").replace(" 0", " ")}</b> (usage from before then no longer counts), but this hasn\'t been confirmed by cluster staff.' if _reset else "")
 # ---- what ran since the reset (or the past 30 days if no reset was detected) ---------------
 _since = _reset if _reset else dt.datetime.now() - dt.timedelta(days=30)
 RAN_TITLE = f'What we ran since the reset ({_reset.strftime("%b %d").replace(" 0", " ")})' if _reset else "What we ran in the past 30 days"
+step("Checking recent job history...")
 recent = charges(_since)
 by_part = {}
 for u, p, vals, h in recent:
@@ -374,6 +381,7 @@ if HAS_COST_MODEL:
             return json.loads(out)
         except Exception as ex:
             print("KaTeX render failed (is Node.js + `npm install` in math/ set up?), showing plain LaTeX instead:", ex); return [f'<div class="katex-display"><span>{html.escape(t)}</span></div>' for t in items]
+    step("Typesetting equations...")
     EQ = dict(zip(TEX, render_tex(list(TEX.values()))))
 else:
     # No billing cap and/or no TRESBillingWeights configured, so there's no weighted formula to
