@@ -63,7 +63,7 @@ text = f"Usage this morning." + (f" Full page: {LINK}" if LINK else "")
 # upload the file without sharing it, then post one message of our own that shows it; chat.postMessage
 # hands back the message id, so tomorrow's run can delete exactly that message
 api("files.completeUploadExternal", files=json.dumps([{"id": up["file_id"], "title": "Usage"}]))
-blocks = json.dumps([{"type": "section", "text": {"type": "mrkdwn", "text": text}}, {"type": "image", "slack_file": {"id": up["file_id"]}, "alt_text": "Usage: billing-hours and GPU-hours bars"}])
+blocks = json.dumps([{"type": "section", "text": {"type": "mrkdwn", "text": text}}, {"type": "image", "slack_file": {"id": up["file_id"]}, "alt_text": "Compute usage bars"}])
 for _ in range(6):
     r = post_ok("chat.postMessage", channel=ch, text=text, blocks=blocks)
     if r.get("ok"): break

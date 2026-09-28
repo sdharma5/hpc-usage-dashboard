@@ -46,10 +46,16 @@ if command -v sacctmgr >/dev/null 2>&1; then
     echo "warning: 'sacctmgr show account $ACCOUNT' found nothing — double check the name."
   fi
 fi
+DEFAULT_PARTITION="${PARTITION:-}"
 if command -v sinfo >/dev/null 2>&1; then
   echo "Partitions on this cluster: $(sinfo -h -o '%P' | tr '\n' ' ')"
+  [ -n "$DEFAULT_PARTITION" ] || DEFAULT_PARTITION="$(sinfo -h -o '%P' | grep '\*$' | head -1 | tr -d '*')"   # the one sinfo marks default, if any
 fi
-PARTITION="$(ask "Partition for the daily refresh job itself (needs only 1 CPU, 1GB, ~1 min)" "${PARTITION:-}")"
+while :; do
+  PARTITION="$(ask "Partition for the daily refresh job itself (needs only 1 CPU, 1GB, ~1 min)" "$DEFAULT_PARTITION")"
+  [ -n "$PARTITION" ] && break
+  echo "A partition name is required -- the daily job can't be submitted without one."
+done
 REFRESH_HOUR="$(ask "Local time to refresh each day (24h HH:MM)" "${REFRESH_HOUR:-06:00}")"
 if ! [[ "$REFRESH_HOUR" =~ ^([01][0-9]|2[0-3]):[0-5][0-9]$ ]]; then echo "That doesn't look like HH:MM — using 06:00."; REFRESH_HOUR=06:00; fi
 TIMEZONE_LABEL="$(ask "Timezone label to show next to that time (cosmetic)" "${TIMEZONE_LABEL:-$(date +%Z)}")"

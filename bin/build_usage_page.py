@@ -136,7 +136,9 @@ for line in sh("scontrol show partition -o").splitlines():
     f = dict(x.split("=", 1) for x in line.split() if "=" in x)
     w = f.get("TRESBillingWeights")
     if not w: continue
-    d = tres(w); weights[f["PartitionName"]] = (float(d.get("CPU", 0)), float(d.get("Mem", "0G").rstrip("G")), float(d.get("GRES/gpu", 0)))
+    d = tres(w)
+    gpu_w = next((float(v) for kk, v in d.items() if kk.upper().startswith("GRES/GPU")), 0.0)   # matches GRES/gpu or a typed GRES/gpu:a100
+    weights[f["PartitionName"]] = (float(d.get("CPU", 0)), float(d.get("Mem", "0G").rstrip("G")), gpu_w)
 HAS_COST_MODEL = HAS_BILLING and bool(weights)   # is there a real per-partition weighted cost model to show?
 
 def detect_reset(window_days=100, step_h=3):
@@ -337,17 +339,24 @@ table.pt{font-size:.74rem}table.pt th{font-size:.72rem}table.pt td{padding:.1rem
 # bin/build_usage_page.py's CODE_BLOCK below -- no formula is invented for caps that aren't
 # billing, since raw TRES caps (cpu/mem/node/GPU-hours on their own) aren't weighted at all.
 EQ, EX1, EX2 = {}, "", ""
+HAS_GPU_ANYWHERE = bool(gpu_parts)   # does any partition even have a GPU billing weight?
 if HAS_COST_MODEL:
     def _tex_num(x): return f"{x:,.0f}".replace(",", "{,}")
-    TEX = {
-     "calc": rf"\begin{{array}}{{ll}}\text{{CPU hourly rate}} & = \text{{CPU cores}} \times \text{{Billing weight per core}}\\ \text{{RAM hourly rate}} & = \text{{RAM (GB)}} \times \text{{Billing weight per GB}}\\ \text{{GPU hourly rate}} & = \text{{Number of GPUs}} \times \text{{Billing weight per GPU}}\\[10pt] \text{{Hourly billing rate}} & = \max(\text{{CPU hourly rate}},\ \text{{RAM hourly rate}},\ \text{{GPU hourly rate}})\\[10pt] \color{{{ACCENT}}}\textbf{{Billing-hours}} & \color{{{ACCENT}}}\mathbf{{=}}\ \textbf{{Hourly billing rate}}\ \mathbf{{\times}}\ \textbf{{Time the job actually runs (in hours)}}\\ \color{{{ACCENT}}}\textbf{{GPU-hours}} & \color{{{ACCENT}}}\mathbf{{=}}\ \textbf{{Number of GPUs}}\ \mathbf{{\times}}\ \textbf{{Time the job actually runs (in hours)}}\end{{array}}",
-    }
-    _ex_part = gpu_parts[0] if gpu_parts else None    # any GPU partition, to make the worked example concrete
+    if HAS_GPU_ANYWHERE:
+        _calc = rf"\begin{{array}}{{ll}}\text{{CPU hourly rate}} & = \text{{CPU cores}} \times \text{{Billing weight per core}}\\ \text{{RAM hourly rate}} & = \text{{RAM (GB)}} \times \text{{Billing weight per GB}}\\ \text{{GPU hourly rate}} & = \text{{Number of GPUs}} \times \text{{Billing weight per GPU}}\\[10pt] \text{{Hourly billing rate}} & = \max(\text{{CPU hourly rate}},\ \text{{RAM hourly rate}},\ \text{{GPU hourly rate}})\\[10pt] \color{{{ACCENT}}}\textbf{{Billing-hours}} & \color{{{ACCENT}}}\mathbf{{=}}\ \textbf{{Hourly billing rate}}\ \mathbf{{\times}}\ \textbf{{Time the job actually runs (in hours)}}\\ \color{{{ACCENT}}}\textbf{{GPU-hours}} & \color{{{ACCENT}}}\mathbf{{=}}\ \textbf{{Number of GPUs}}\ \mathbf{{\times}}\ \textbf{{Time the job actually runs (in hours)}}\end{{array}}"
+    else:   # no partition here has a GPU billing weight at all -- don't mention GPUs in the formula
+        _calc = rf"\begin{{array}}{{ll}}\text{{CPU hourly rate}} & = \text{{CPU cores}} \times \text{{Billing weight per core}}\\ \text{{RAM hourly rate}} & = \text{{RAM (GB)}} \times \text{{Billing weight per GB}}\\[10pt] \text{{Hourly billing rate}} & = \max(\text{{CPU hourly rate}},\ \text{{RAM hourly rate}})\\[10pt] \color{{{ACCENT}}}\textbf{{Billing-hours}} & \color{{{ACCENT}}}\mathbf{{=}}\ \textbf{{Hourly billing rate}}\ \mathbf{{\times}}\ \textbf{{Time the job actually runs (in hours)}}\end{{array}}"
+    TEX = {"calc": _calc}
+    _ex_part = gpu_parts[0] if gpu_parts else order[0]    # a GPU partition if one exists, otherwise any partition, to make the worked example concrete
     if _ex_part:
-        _c, _r, _g = REF_CORES * weights[_ex_part][0], REF_GB * weights[_ex_part][1], weights[_ex_part][2]; _rate = max(_c, _r, _g)
-        TEX["run"] = rf"\begin{{array}}{{ll}}{_tex_num(_rate)} \times 4 & = {_tex_num(_rate * 4)}\ \text{{billing-hours}}\\ 1 \times 4 & = 4\ \text{{GPU-hours}}\end{{array}}"
-        EX1 = (f"For example, a <code>{e(_ex_part)}</code> job with {REF_CORES} CPU cores, {REF_GB} GB of system RAM, and one GPU has hourly rates of {f0(_c)} for CPU, {f0(_r)} for RAM, and {f0(_g)} for the GPU.")
-        EX2 = f"{CLUSTER_NAME} uses the highest rate: max({f0(_c)}, {f0(_r)}, {f0(_g)}) = {f0(_rate)}, rather than adding them together. If the job actually runs for 4 hours, it uses:"
+        wc, wm, wg = weights[_ex_part]; _c, _r, _g = REF_CORES * wc, REF_GB * wm, wg; _rate = max(_c, _r, _g if wg > 0 else 0)
+        if wg > 0:
+            TEX["run"] = rf"\begin{{array}}{{ll}}{_tex_num(_rate)} \times 4 & = {_tex_num(_rate * 4)}\ \text{{billing-hours}}\\ 1 \times 4 & = 4\ \text{{GPU-hours}}\end{{array}}"
+            EX1 = (f"For example, a <code>{e(_ex_part)}</code> job with {REF_CORES} CPU cores, {REF_GB} GB of system RAM, and one GPU has hourly rates of {f0(_c)} for CPU, {f0(_r)} for RAM, and {f0(_g)} for the GPU.")
+        else:
+            TEX["run"] = rf"{_tex_num(_rate)} \times 4 = {_tex_num(_rate * 4)}\ \text{{billing-hours}}"
+            EX1 = (f"For example, a <code>{e(_ex_part)}</code> job with {REF_CORES} CPU cores and {REF_GB} GB of system RAM has hourly rates of {f0(_c)} for CPU and {f0(_r)} for RAM.")
+        EX2 = f"{CLUSTER_NAME} uses the highest rate: max({f0(_c)}, {f0(_r)}{f', {f0(_g)}' if wg > 0 else ''}) = {f0(_rate)}, rather than adding them together. If the job actually runs for 4 hours, it uses:"
     def render_tex(items):
         node = subprocess.run("command -v node", shell=True, capture_output=True, text=True).stdout.strip() or "node"
         try:
@@ -435,19 +444,24 @@ DECAY_SENTENCE = (f"Older usage counts less over time. With a {round(H / 24)}-da
                   if DECAYS else "Usage does not fade over time on this cluster.")
 def make_body(lede):
     if HAS_COST_MODEL:
+        _eq_aria = "CPU, RAM and GPU hourly rates; hourly billing rate is the largest of the three; billing-hours and GPU-hours equations" if HAS_GPU_ANYWHERE else "CPU and RAM hourly rates; hourly billing rate is the larger of the two; billing-hours equation"
+        _run_aria = "Worked example: billing-hours and GPU-hours for 4 hours" if HAS_GPU_ANYWHERE else "Worked example: billing-hours for 4 hours"
+        _wait_sentence = "Time spent waiting in the queue is not counted in the time used to calculate billing-hours" + (" or GPU-hours." if HAS_GPU_ANYWHERE else ".")
         cost_calc_details = f"""<details><summary>How are job costs calculated?</summary>
 <p>Hourly rates depend on the resources allocated to your job (even if your code doesn't fully use them up) and the partition's billing weights:</p>
-<div class="eq" role="math" aria-label="CPU, RAM and GPU hourly rates; hourly billing rate is the largest of the three; billing-hours and GPU-hours equations">{EQ["calc"]}</div>
+<div class="eq" role="math" aria-label="{_eq_aria}">{EQ["calc"]}</div>
 <p><i>{EX1}</i></p>
 <p><i>{EX2}</i></p>
-<div class="eq" role="math" aria-label="Worked example: billing-hours and GPU-hours for 4 hours">{EQ.get("run", "")}</div>
-<p>Time spent waiting in the queue is not counted in the time used to calculate billing-hours or GPU-hours.</p></details>"""
+<div class="eq" role="math" aria-label="{_run_aria}">{EQ.get("run", "")}</div>
+<p>{_wait_sentence}</p></details>"""
+        _keep_running_sentence = ("The last column estimates how long that example job could run with what's left. For GPU jobs, whichever runs out first sets the limit: billing-hours or GPU-hours."
+                                   if HAS_GPU_ANYWHERE else "The last column estimates how long that example job could run with the billing-hours left.")
         cost_section = f"""<section>
 <h2>What a job costs now</h2>
-<p class="desc">For context, the table below compares costs for a job with {REF_CORES} CPU cores and {REF_GB} GB of RAM (plus one GPU for GPU queues). Your job's cost may differ depending on the resources allocated to it.</p>
+<p class="desc">For context, the table below compares costs for a job with {REF_CORES} CPU cores and {REF_GB} GB of RAM{" (plus one GPU for GPU queues)" if HAS_GPU_ANYWHERE else ""}. Your job's cost may differ depending on the resources allocated to it.</p>
 <div class="tw"><table><thead><tr><th>Partition</th><th class="n">Billing weight per core</th><th class="n">Billing weight per GB</th><th class="n">Billing weight per GPU</th><th class="n">Hourly billing rate</th><th class="n">Hours we could keep running</th></tr></thead><tbody>{cost_rows}</tbody></table></div>
 <details><summary>How long could we keep running?</summary>
-<p>The last column estimates how long that example job could run with what's left. For GPU jobs, whichever runs out first sets the limit: billing-hours or GPU-hours.</p>
+<p>{_keep_running_sentence}</p>
 <p>This assumes only that job is running, with no future decreases or resets.</p></details>
 </section>"""
     else:
