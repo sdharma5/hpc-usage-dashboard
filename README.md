@@ -118,14 +118,11 @@ clean up)
 
 - Caps: `sacctmgr show assoc ... format=GrpTRESMins`, converted from minutes to hours, one bar per
   capped resource found.
-- Current usage: `sshare -A <acct> -a`, Slurm's own decayed usage total per person, the same
-  numbers Slurm uses to throttle new jobs.
+- Current usage: `sshare -A <acct> -a`, Slurm's own decayed usage total per user (the same
+  numbers Slurm uses to throttle new jobs).
 - Reset detection: your cluster may reset usage on a schedule (`PriorityUsageResetPeriod`). Slurm
-  doesn't expose the last reset date, so the page infers it: it tests every possible start date
-  over the last 100 days against job records for the account's main capped resource (billing, if
-  present, otherwise whichever cap comes first), fading old jobs by the cluster's decay half-life,
-  and keeps whichever date best reproduces Slurm's current total. _This is inferred, not confirmed;
-  use an actual reset date from your cluster admins if you have one._
+  doesn't expose the last reset date, so the page estimates it based on current usage metrics and decay rate.
+   _Use an actual reset date from your cluster admins if you have one._
 - Job cost table: only shown with a billing cap and `TRESBillingWeights` configured
   (`scontrol show partition`), applied to the reference job size from setup with Slurm's own max()
   rule. Otherwise the page shows the plain Slurm fields behind each cap instead.
