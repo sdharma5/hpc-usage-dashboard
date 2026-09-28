@@ -1,6 +1,6 @@
 # hpc-usage-dashboard
 
-A plain static usage page for a lab's shared compute allocation. It shows how much compute is
+A plain, daily-updated usage page that gives you details for your lab's shared compute allocation. It shows how much compute is
 left, who's used what, what ran recently, and what a job costs on each partition. A daily `sbatch` job rebuilds it from Slurm's own accounting, and you can host it
 wherever you like (ex. a free Cloudflare Pages link). It can optionally post a picture
 of the usage bars to your lab's Slack every day at some user-set time.
