@@ -130,8 +130,7 @@ clean up)
 ## Customizing
 
 - Colors: set `ACCENT` in `config.env`; the rest of the per-person palette is generated from it.
-  Each person keeps the same color day to day (`user_colors.json`, regenerated each run, not meant
-  to be hand-edited).
+  Each person keeps the same color day to day (`user_colors.json`)
 - Reference job size, refresh time, account, and which partition the daily job runs on: all in
   `config.env`; re-run `./setup.sh` or edit and rebuild. Which partitions *appear* isn't something
   you set: that's automatic, from whichever have `TRESBillingWeights`.
