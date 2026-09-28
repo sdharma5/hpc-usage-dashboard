@@ -57,7 +57,7 @@ The "what a job costs now" table and its equations are the one part that's inher
 one setup: they only make sense when the account has a `billing` cap *and* the cluster has
 `TRESBillingWeights` configured on its partitions (`scontrol show partition` shows
 `TRESBillingWeights=...`), since that's what a per-partition weighted rate actually is. When that
-setup isn't there, the page doesn't invent a formula for something it doesn't apply to — it drops
+setup isn't there, the page doesn't invent a formula for something it doesn't apply to. It drops
 that table and instead shows, in a plain code block, exactly which Slurm fields each cap number
 comes from.
 
