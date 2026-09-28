@@ -1,14 +1,15 @@
 ![hpc-usage-dashboard](docs/title.svg)
 
-A simple, daily-udpated HTML dashboard for a lab's shared compute allocation. It shows usage (by each lab member) for
-each capped resource, recent job statistics, and (when relevant) what a job costs on each partition. A daily `sbatch` job rebuilds it
-from Slurm's own accounting. Host it wherever you like (e.g. a free Cloudflare Pages link), and
-optionally post the usage bars to Slack every morning.
+A simple, daily-updated HTML dashboard for a lab's shared compute allocation. It shows usage (by
+each lab member) for each capped resource, recent job statistics, and (when relevant) what a job
+costs on each partition. A daily `sbatch` job rebuilds it from Slurm's own accounting. Host it
+wherever you like (e.g. a free Cloudflare Pages link), and optionally post the usage bars to Slack
+every morning.
 
-The dashboard works on any cluster using Slurm to schedule jobs and track usage. It finds whatever resources
-your account is actually capped on and builds one usage bar per capped resource. Billing-hours and
-GPU-hours (Skipjack's setup) are the running example capped resources in this README, but the same tool works for
-an account capped on anything else.
+The dashboard works on any cluster using Slurm to schedule jobs and track usage. It finds whatever
+resources your account is actually capped on and builds one usage bar per capped resource.
+Billing-hours and GPU-hours (Skipjack's setup) are this README's running examples, but the same
+tool works for an account capped on anything else.
 
 <img src="docs/screenshots/demo-bars.png" alt="Two usage bars, billing-hours and GPU-hours, broken down by person" width="70%">
 
@@ -22,11 +23,10 @@ with no Slurm access: see [Try it without Slurm](#try-it-without-slurm).
   the example), broken down by person. Colors are generated from one accent color you pick.
 - What ran since the last reset (or the past 30 days, if the cluster doesn't reset usage), by
   partition: jobs, hours charged against each capped resource, average job length.
-- If the cluster prices jobs with a weighted billing formula: what a (reference) job costs now and how long you could keep running it on each partition, with the cheapest
-  and priciest GPU partitions colored green to red.
-- Dropdown explanations of how the numbers are calculated and whether usage resets, equations
-  typeset when Node.js is available, plain text otherwise. With no weighted formula to explain,
-  this becomes a short code snippet naming the exact Slurm fields instead.
+- If the cluster uses a weighted billing formula: what a reference job costs and how long you could
+  keep it running on each partition, cheapest to priciest GPU partition colored green to red.
+- Dropdowns explaining the calculations and whether usage resets: typeset equations when Node.js
+  is available, plain text otherwise, or a short code snippet when there's no formula to explain.
 
 ![The full dashboard: bars, recent-activity table, and job cost table, from the demo](docs/screenshots/demo-details.png)
 
@@ -44,18 +44,14 @@ like `gres/gpu:a100`), `cpu`, `mem`, `node`, a `license/*`, or anything else get
 from its own key. One cap or five, it doesn't matter, and the same `setup.sh`/`config.env` works
 either way.
 
-The "what a job costs now" table and its equations are the one genuinely setup-specific part: they
-only apply when the account has a `billing` cap *and* the cluster has `TRESBillingWeights`
-configured on its partitions (`scontrol show partition` shows `TRESBillingWeights=...`). When that
-isn't the case, the page doesn't invent a formula. It drops the table and shows, in a plain code
-block, which Slurm fields each cap number comes from instead.
+The cost table only applies with a `billing` cap and `TRESBillingWeights` configured
+(`scontrol show partition`). Without that, the page shows the raw Slurm fields instead of
+guessing at a formula.
 
-This only covers clusters whose accounting runs through Slurm's own TRES/billing system. A cluster
-that tracks its allowance a different way, e.g. a "service units" ledger maintained outside Slurm
-(a separate accounting system or database, common at some HPC centers), isn't something this tool
-can discover on its own; it would need someone to say what command or output that system uses, so
-an adapter could be written. Run the `sacctmgr` command above yourself if you're not sure which
-kind your cluster is.
+This only works for clusters whose accounting runs through Slurm's own TRES/billing system, not a
+separate ledger (e.g. "service units") tracked outside Slurm. Check with `sacctmgr` if unsure. A
+non-Slurm ledger isn't something this tool can discover on its own; someone would need to say what
+command or output it uses, so an adapter could be written.
 
 Optional:
 - Node.js, for typeset equations (KaTeX) instead of plain LaTeX text.
