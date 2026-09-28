@@ -6,12 +6,11 @@ no database. A daily `sbatch` job rebuilds it from Slurm's own accounting, you h
 you want (a free Cloudflare Pages link works fine), and it can optionally post a picture of the
 usage bars to Slack every morning.
 
-Built first for one lab's cluster. This is the general version, so any lab on any Slurm cluster
-can use it.
-
-Slurm is the job scheduler, the thing behind `sbatch`, `squeue`, `sacct`. It's not a cluster's
-name, it's the software most clusters use to manage jobs. Your cluster has its own name (in
-config.env this is `CLUSTER_NAME`), and this tool works on it as long as it runs Slurm.
+Slurm isn't a cluster. It's the scheduler and accounting database that a cluster runs: the thing
+behind `sbatch`, `squeue`, `sacct`, and the thing that tracks who's used what against an
+allocation. Your cluster has its own name (in config.env this is `CLUSTER_NAME`), and this tool
+works on any cluster that uses Slurm to schedule jobs and track usage, whatever that cluster is
+called.
 
 ## What it shows
 
