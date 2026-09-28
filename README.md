@@ -8,6 +8,11 @@ of the usage bars to your lab's Slack every day at some user-set time.
 This tool works on any cluster that
 uses Slurm to schedule jobs and track usage.
 
+![Two usage bars, billing-hours and GPU-hours, broken down by person](docs/screenshots/demo-bars.png)
+
+This is from `demo/`, a fully fabricated example (fictional lab, fictional cluster, fictional
+usage) you can run yourself with no Slurm access at all: see [Try it without Slurm](#try-it-without-slurm) below.
+
 ## What's in the dashboard?
 
 - How much of the allocation is left. This is illustrated with two usage bars (billing-hours and GPU-hours) broken down by each lab members' specific usage. Colors are
@@ -19,6 +24,8 @@ uses Slurm to schedule jobs and track usage.
   colored green to red.
 - Plain explanations of how billing-hours and GPU-hours are calculated and whether usage resets,
   with the equations typeset when Node.js is available, plain text otherwise.
+
+![The equations, reset explanation, recent-activity table, and job cost table, from the demo](docs/screenshots/demo-details.png)
 
 ## What info does this need to work?
 
@@ -65,6 +72,21 @@ sed -e "s|@@APP_SLUG@@|myapp|g" -e "s|@@ACCOUNT@@|myacct|g" -e "s|@@PARTITION@@|
 python3 bin/build_usage_page.py     # builds index.html once, to check it
 sbatch refresh_daily.sbatch         # runs now, then re-schedules itself daily
 ```
+
+### Try it without Slurm
+
+`demo/` is a fully fabricated example, a fictional lab and cluster, with no real data and no
+Slurm access needed:
+
+```
+cd demo
+./run_demo.sh
+```
+
+Open the `index.html` it writes in that folder. It works by putting stand-in
+`sacctmgr`/`sshare`/`sacct`/`scontrol` scripts (`demo/fakebin/`) ahead of the real ones on `PATH`,
+so the actual, unmodified builder runs against fabricated data instead of a real cluster. See
+`demo/README.md` for how it's put together.
 
 ## How does the daily refresh work?
 
@@ -124,6 +146,8 @@ bin/refresh_daily.sbatch.template   filled in by setup.sh, becomes refresh_daily
 math/                          KaTeX (render_cli.js + its CSS); npm install here for KaTeX
 docs/SLACK_SETUP.md            step-by-step Slack app setup
 docs/CLOUDFLARE_SETUP.md       step-by-step Cloudflare Pages setup
+docs/screenshots/              screenshots used above, from demo/
+demo/                          fully fabricated example; see demo/README.md
 ```
 
 After setup, your install also has (all git-ignored, all local/generated): `config.env`,

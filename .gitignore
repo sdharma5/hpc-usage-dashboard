@@ -1,14 +1,15 @@
 # Per-installation, generated locally by setup.sh / the daily job — never commit these.
-config.env
-refresh_daily.sbatch
-index.html
-index_artifact.html
-bars_only.html
-bars.png
-preview_vbars.png
-user_colors.json
-slack_last_file.json
-logs/
+# Anchored to the repo root so they don't also match demo/'s own tracked files.
+/config.env
+/refresh_daily.sbatch
+/index.html
+/index_artifact.html
+/bars_only.html
+/bars.png
+/preview_vbars.png
+/user_colors.json
+/slack_last_file.json
+/logs/
 
 # Node
 math/node_modules/
@@ -16,6 +17,10 @@ math/node_modules/
 # Never — secrets live outside the repo, in ~/.config/<APP_SLUG>/, but ignore just in case
 *.env
 !config.example.env
+!demo/config.env
 
 # filesystem noise
 .ipynb_checkpoints/
+
+# Python bytecode
+__pycache__/

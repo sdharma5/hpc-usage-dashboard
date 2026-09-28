@@ -1,0 +1,28 @@
+#!/usr/bin/env python3
+"""Fake sacct for the demo: filters JOBS by -S like real sacct would, and prints whichever
+columns --format asked for (build_usage_page.py only ever asks for one of two combinations)."""
+import os, sys, datetime as dt
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _fixtures import JOBS, job_times, fmt_dt, fmt_elapsed
+
+args = sys.argv[1:]
+start_s = None
+fmt = ""
+for i, a in enumerate(args):
+    if a == "-S" and i + 1 < len(args): start_s = args[i + 1]
+    if a.startswith("--format="): fmt = a.split("=", 1)[1]
+cutoff = dt.datetime.strptime(start_s, "%Y-%m-%dT%H:%M:%S") if start_s else dt.datetime.min
+
+rows = []
+for j in JOBS:
+    user, part, rate, gpus, days_ago, hours = j
+    start, end = job_times(days_ago, hours)
+    if start < cutoff: continue
+    rows.append((user, part, rate, gpus, start, end, hours))
+
+if fmt.startswith("User,Partition"):
+    for user, part, rate, gpus, start, end, hours in rows:
+        print(f"{user}|{part}|billing={rate},gres/gpu={gpus}|{fmt_elapsed(hours)}")
+elif fmt.startswith("Start,End"):
+    for user, part, rate, gpus, start, end, hours in rows:
+        print(f"{fmt_dt(start)}|{fmt_dt(end)}|billing={rate},gres/gpu={gpus}")

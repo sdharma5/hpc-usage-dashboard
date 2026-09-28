@@ -1,0 +1,7 @@
+#!/usr/bin/env python3
+"""Fake sacctmgr for the demo: only handles the one query build_usage_page.py makes."""
+import os, sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _fixtures import CAP_BILL_H, CAP_GPU_H
+
+print(f"billing={CAP_BILL_H * 60:.0f},gres/gpu={CAP_GPU_H * 60:.0f}")

@@ -9,7 +9,7 @@ docs/SLACK_SETUP.md; setup.sh writes this file for you). The token is never prin
 a message, doing nothing, if Slack isn't configured, so the daily job never breaks over this."""
 import os, sys, json, stat, subprocess, shutil, time, urllib.request, urllib.parse
 
-HERE = os.path.dirname(os.path.abspath(__file__)); ROOT = os.path.dirname(HERE)
+HERE = os.path.dirname(os.path.abspath(__file__)); ROOT = os.environ.get("HPCUSAGE_ROOT") or os.path.dirname(HERE)
 
 def load_config():
     cfg = {}

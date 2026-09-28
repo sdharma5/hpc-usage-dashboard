@@ -1,0 +1,17 @@
+#!/usr/bin/env python3
+"""Fake scontrol for the demo: only the two subcommands build_usage_page.py calls."""
+import os, sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _fixtures import PARTITIONS, HALF_LIFE_DAYS
+
+args = sys.argv[1:]
+if args[:2] == ["show", "partition"]:
+    for name, w in PARTITIONS.items():
+        tokens = [f"PartitionName={name}", "State=UP", "TotalNodes=4"]
+        if w is not None:
+            cpu, mem, gpu = w
+            tokens.append(f"TRESBillingWeights=CPU={cpu},Mem={mem}G,GRES/gpu={gpu}")
+        print(" ".join(tokens))
+elif args[:2] == ["show", "config"]:
+    print(f"PriorityDecayHalfLife       = {int(HALF_LIFE_DAYS)}-00:00:00")
+    print("PriorityUsageResetPeriod    = MONTHLY")

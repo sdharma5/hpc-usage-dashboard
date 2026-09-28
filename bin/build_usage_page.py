@@ -16,7 +16,7 @@ uses this formula, to estimate a hypothetical job's rate."""
 import subprocess, os, re, html, json, math, colorsys, datetime as dt
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-ROOT = os.path.dirname(HERE)   # config.env, index.html etc. live at the repo root, next to setup.sh
+ROOT = os.environ.get("HPCUSAGE_ROOT") or os.path.dirname(HERE)   # config.env, index.html etc. live here (normally the repo root, next to setup.sh; HPCUSAGE_ROOT overrides this, e.g. for demo/)
 
 def load_config():
     cfg = {}
@@ -332,6 +332,10 @@ def vbar_geom(kind):
         elif h >= 18 and 7.6 * len(f"{u}  {t2}") <= BW - 10: mode = "in1"
         else: mode = "out"
         items.append(dict(key=u, slot=slots[u], y=y, h=h, t2=t2, p2=p2, mode=mode, val=v))
+    seen_out = False   # items are bottom-to-top, biggest-to-smallest; once one doesn't fit inside,
+    for it in items:   # nothing smaller stacked above it should either -- a bigger segment showing
+        if seen_out: it["mode"] = "out"          # an outside label right below a smaller segment's
+        elif it["mode"] == "out": seen_out = True  # inside label would look like an inconsistency
     outs = sorted([it for it in items if it["mode"] == "out"], key=lambda it: it["y"] + it["h"] / 2)
     for it, ly in zip(outs, _spread([it["y"] + it["h"] / 2 for it in outs], 15, BAR_TOP + 8, BAR_TOP + BAR_H - 8)): it["ly"] = ly
     return dict(title=title, unit=unit, fmt=fmt, items=items, zeros=[(t[0], slots[t[0]]) for t in named if t[idx] <= 0], rem_h=BAR_H - sum(hs), rem_txt=f"{fmt(left_)} hrs left", sub=f"{f0(left_)} left of {f0(cap_)} ({pc(used_ / cap_)} used)", label=f"{title} {f0(left_)} left of {f0(cap_)} ({pc(used_ / cap_)} used)")

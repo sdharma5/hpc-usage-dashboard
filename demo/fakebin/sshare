@@ -1,0 +1,13 @@
+#!/usr/bin/env python3
+"""Fake sshare for the demo."""
+import os, sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _fixtures import USERS, ZERO_USERS, account_totals, user_totals
+
+bill_total, gpu_total = account_totals()
+ub, ug = user_totals()
+print(f"|billing={bill_total * 60:.0f},gres/gpu={gpu_total * 60:.0f}")
+for u in USERS:
+    print(f"{u}|billing={ub[u] * 60:.0f},gres/gpu={ug[u] * 60:.0f}")
+for u in ZERO_USERS:
+    print(f"{u}|billing=0,gres/gpu=0")
