@@ -96,7 +96,7 @@ Open the `index.html` it writes there. It works by putting stand-in
 so the actual, unmodified builder runs against fabricated data. See `demo/README.md` for how it's
 put together.
 
-## How the daily refresh works
+## How does the daily refresh work?
 
 Most shared clusters don't allow a user's own cron or scrontab, so `refresh_daily.sbatch`
 resubmits itself, chained day after day. Each run:
@@ -113,7 +113,7 @@ Check it's running: `squeue -u $USER -n <APP_SLUG>-daily`
 Stop it: `scancel -u $USER -n <APP_SLUG>-daily` (cancels the waiting future run; nothing else to
 clean up)
 
-## How usage is computed
+## How is usage computed?
 
 - Caps: `sacctmgr show assoc ... format=GrpTRESMins`, converted from minutes to hours, one bar per
   capped resource found.
