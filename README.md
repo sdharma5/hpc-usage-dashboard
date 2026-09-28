@@ -1,7 +1,7 @@
 ![hpc-usage-dashboard](docs/title.svg)
 
-A simple, daily-udpated HTML dashboard for a lab's shared compute allocation. It shows usage for
-each capped resource, usage by lab member, recent job statistics, and (when relevant) what a job costs on each partition. A daily `sbatch` job rebuilds it
+A simple, daily-udpated HTML dashboard for a lab's shared compute allocation. It shows usage (by each lab member) for
+each capped resource, recent job statistics, and (when relevant) what a job costs on each partition. A daily `sbatch` job rebuilds it
 from Slurm's own accounting. Host it wherever you like (e.g. a free Cloudflare Pages link), and
 optionally post the usage bars to Slack every morning.
 
