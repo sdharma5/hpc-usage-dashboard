@@ -73,7 +73,7 @@ Most shared clusters don't allow a user's own cron or scrontab, so `refresh_dail
 resubmits itself, one job at a time, chained day after day. Each run does four things in order:
 
 1. Queues tomorrow's run for the time you set in setup (happens first to prevent a failed run from stalling future runs).
-2. Rebuilds the page: polls Slurm (`sacctmgr`, `sshare`, `sacct`, `scontrol`) for the account's
+2. Rebuilds the dashboard page: polls Slurm (`sacctmgr`, `sshare`, `sacct`, `scontrol`) for the account's
    caps, current usage, recent jobs, and partition weights, and regenerates `index.html` from
    scratch.
 3. Uploads the new page to Cloudflare, if that's configured.
