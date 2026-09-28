@@ -50,7 +50,7 @@ if not ACCOUNT: raise SystemExit("config.env: ACCOUNT is not set")
 OUT = os.path.join(ROOT, "index.html")
 
 def sh(cmd):
-    return subprocess.run(cmd, shell=True, capture_output=True, text=True, check=True).stdout
+    return subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, check=True).stdout
 
 def tres(s):
     d = {}
@@ -358,9 +358,9 @@ if HAS_COST_MODEL:
             EX1 = (f"For example, a <code>{e(_ex_part)}</code> job with {REF_CORES} CPU cores and {REF_GB} GB of system RAM has hourly rates of {f0(_c)} for CPU and {f0(_r)} for RAM.")
         EX2 = f"{CLUSTER_NAME} uses the highest rate: max({f0(_c)}, {f0(_r)}{f', {f0(_g)}' if wg > 0 else ''}) = {f0(_rate)}, rather than adding them together. If the job actually runs for 4 hours, it uses:"
     def render_tex(items):
-        node = subprocess.run("command -v node", shell=True, capture_output=True, text=True).stdout.strip() or "node"
+        node = subprocess.run("command -v node", shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True).stdout.strip() or "node"
         try:
-            out = subprocess.run([node, os.path.join(HERE, "..", "math", "render_cli.js")], input=json.dumps(items), capture_output=True, text=True, timeout=90, check=True, cwd=os.path.join(HERE, "..", "math")).stdout
+            out = subprocess.run([node, os.path.join(HERE, "..", "math", "render_cli.js")], input=json.dumps(items), stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, timeout=90, check=True, cwd=os.path.join(HERE, "..", "math")).stdout
             return json.loads(out)
         except Exception as ex:
             print("KaTeX render failed (is Node.js + `npm install` in math/ set up?), showing plain LaTeX instead:", ex); return [f'<div class="katex-display"><span>{html.escape(t)}</span></div>' for t in items]
